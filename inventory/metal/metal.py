@@ -19,9 +19,9 @@ if os.path.isfile(CONFIG_PATH):
 def run():
     args = parse_arguments()
     if args.host:
-        result = hostvars(args.host)
+        result = host_vars(args.host)
     else:
-        result = hostlist()
+        result = host_list()
 
     return_json(result)
 
@@ -41,11 +41,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def host_details():
-    return dict()
-
-
-def hostlist():
+def host_list():
     cmd = [METALCTL_BIN, "machine", "ls", "-o", "json"]
     env = os.environ.copy()
 
@@ -180,7 +176,8 @@ def _append_to_inventory(inventory, key, host):
     hosts.append(host)
 
 
-def hostvars(host):
+def host_vars(host):
+    # currently not required because host list returns _meta information
     return dict()
 
 

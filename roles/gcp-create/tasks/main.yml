@@ -1,0 +1,29 @@
+---
+- name: Create GCP Cluster
+  command: gcloud beta container --project {{ gcp_project }} clusters create {{ gcp_cluster_name }}
+    --zone {{ gcp_location }}
+    --no-enable-basic-auth
+    --cluster-version {{ gcp_k8s_version }}
+    --machine-type {{ gcp_machine_type }}
+    --image-type COS
+    --disk-type "pd-standard"
+    --disk-size {{ gcp_disk_size_gb }}
+    --metadata disable-legacy-endpoints=true
+    --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append"
+    --num-nodes {{ gcp_initial_node_count }}
+    --enable-autoscaling
+    --min-nodes {{ gcp_autoscaling_min_nodes | default(gcp_initial_node_count) }}
+    --max-nodes {{ gcp_autoscaling_max_nodes | default(gcp_initial_node_count * 2) }}
+    --enable-ip-alias
+    --network "projects/{{ gcp_project }}/global/networks/default"
+    --default-max-pods-per-node "110"
+    --addons HorizontalPodAutoscaling,HttpLoadBalancing
+    --enable-autoupgrade
+    --enable-autorepair
+    --account {{ gcp_service_account }}
+  register: result
+  changed_when:
+    - "'message=Already exists' not in result.stderr"
+  failed_when:
+    - result is failed
+    - "'message=Already exists' not in result.stderr"

@@ -1,0 +1,14 @@
+---
+- name: Group k8s masters
+  group_by:
+    key: kube-masters
+  when: inventory_hostname in master_nodes | default([])
+
+- name: Group k8s workers
+  group_by:
+    key: kube-workers
+  when: inventory_hostname in worker_nodes | default([])
+
+- name: Set k8s cluster role
+  set_fact:
+    kubernetes_role: "{{ 'master' if inventory_hostname in groups.get('kube-masters', {}) else 'node' }}"

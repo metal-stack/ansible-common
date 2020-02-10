@@ -1,0 +1,6 @@
+---
+helm_install_binary: true
+helm_install_tiller: true
+helm_bin: helm
+helm_tiller_version: 2.14.3
+helm_version: 2.14.3

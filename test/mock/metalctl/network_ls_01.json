@@ -1,0 +1,27 @@
+[
+    {
+        "changed": "2019-09-03T14:30:27.115Z",
+        "created": "2019-09-03T14:30:27.115Z",
+        "description": "test network",
+        "destinationprefixes": [],
+        "id": "02cc0b42-f675-4c7d-a671-f7a9c8214b61",
+        "labels": null,
+        "name": "test",
+        "nat": false,
+        "parentnetworkid": "tenant-super-network-fra-equ01",
+        "partitionid": "fra-equ01",
+        "prefixes": [
+            "10.0.156.0/22"
+        ],
+        "privatesuper": false,
+        "projectid": "12e1b1db-44d7-4f57-9c9d-5799b582ab8f",
+        "underlay": false,
+        "usage": {
+            "available_ips": 1024,
+            "available_prefixes": 0,
+            "used_ips": 2,
+            "used_prefixes": 0
+        },
+        "vrf": 105
+    }
+]

@@ -1,0 +1,50 @@
+---
+- name: Create folder for charts and values
+  file:
+    path: "{{ helm_chart_remote_temp }}"
+    state: directory
+
+- name: Copy over custom helm charts
+  synchronize:
+    src: "{{ helm_chart_custom_folder }}"
+    dest: "{{ helm_chart_remote_temp }}"
+    use_ssh_args: yes
+    delete: yes
+  when: helm_chart_custom_folder is defined and helm_chart_custom_folder
+
+- name: Template helm value file
+  template:
+    src: "{{ helm_value_file_template }}"
+    dest: "{{ helm_chart_remote_temp + '/' + helm_value_file_template | basename }}"
+  when: helm_value_file_template is defined and helm_value_file_template
+
+- name: Calculate hash of configuration
+  set_fact:
+    _helm_chart_combined_params: |
+      {{ helm_config_params.update(
+          {'helm_chart.config_hash': (
+              lookup('template', helm_value_file_template) + helm_config_params | string) | hash('sha1')
+          }) | default(helm_config_params, true)
+         if
+           helm_chart_inject_config_hash
+         else
+           helm_config_params
+      }}
+
+- name: Deploy helm chart ({{ helm_release_name }}{% if helm_chart_version is defined %} {{helm_chart_version}}{% endif %})
+  command: "{{ helm_bin }} upgrade
+    --install
+    --namespace {{ helm_target_namespace }}
+    {% if helm_force is defined and helm_force %}--force{% endif %}
+    {% if helm_additional_params is defined and helm_additional_params %}{{ helm_additional_params | join(' ') if helm_additional_params is iterable else helm_additional_params }}{% endif %}
+    {% if _helm_chart_combined_params %}--set '{% for k, v in _helm_chart_combined_params.items() %}{{ k }}={{ v }}{% if not loop.last %},{% endif %}{% endfor %}'{% endif %}
+    {% if helm_value_file_template is defined and helm_value_file_template %}-f {{ helm_value_file_template | basename }}{% endif %}
+    {% if helm_repo is defined and helm_repo %}--repo {{ helm_repo }}{% endif %}
+    {% if helm_chart_version is defined and helm_chart_version %}--version {{ helm_chart_version }}{% endif %}
+    {% if helm_wait is defined and helm_wait %}--wait{% endif %}
+    {% if helm_timeout is defined and helm_timeout %}--timeout {{ helm_timeout }}{% endif %}
+    {{ helm_release_name }}
+    {{ helm_chart }}"
+  args:
+    chdir: "{{ helm_chart_remote_temp }}"
+  changed_when: yes

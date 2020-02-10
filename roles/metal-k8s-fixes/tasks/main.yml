@@ -1,0 +1,14 @@
+---
+# use these flannel files when running the geerlingguy kubernetes role
+- name: Copy patched flannel to machines
+  copy:
+    src: "{{ item }}"
+    dest: "/tmp/{{ item }}"
+  loop:
+    - metal-patched-kube-flannel-rbac.yml
+    - metal-patched-kube-flannel.yml
+
+- name: Set path to flannel manifests for k8s-role
+  set_fact:
+    kubernetes_flannel_manifest_file_rbac: /tmp/metal-patched-kube-flannel-rbac.yml
+    kubernetes_flannel_manifest_file: /tmp/metal-patched-kube-flannel.yml

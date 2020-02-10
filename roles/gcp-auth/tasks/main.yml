@@ -1,0 +1,3 @@
+---
+- name: Authenticate at Google Cloud
+  command: gcloud auth activate-service-account --project {{ gcp_project }} --key-file {{ gcp_service_account_file }}

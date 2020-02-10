@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  author: Gerrit91
+  company:
+  license: "license (MIT)"
+  min_ansible_version: 2.9
+  platforms:
+   - name: Ubuntu
+     versions:
+      - xenial
+      - bionic
+dependencies: []

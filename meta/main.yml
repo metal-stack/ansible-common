@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: Gerrit91
+  author: Metal Stack
   company:
   license: "license (MIT)"
   min_ansible_version: 2.9

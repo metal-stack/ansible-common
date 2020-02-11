@@ -54,7 +54,7 @@ options:
           - present
 
 author:
-    - metal-pod
+    - Metal Stack
 '''
 
 EXAMPLES = '''

@@ -1,10 +1,18 @@
 #!/usr/bin/env python
 
-### This is just copied from: https://github.com/sorend/sshconf
-### in order to reduce dependencies to other packages...
+# first part of this inventory is just copied from https://github.com/sorend/sshconf
+# in order to reduce dependencies to other packages...
 
 import re
-from collections import defaultdict, namedtuple
+from collections import defaultdict
+import argparse
+import datetime
+import pickle
+import locale
+import json
+import os
+import subprocess
+import sys
 
 # taken from "man ssh"
 KNOWN_PARAMS = (
@@ -347,18 +355,32 @@ class SshConfig(object):
             fh_.write(self.config())
 
 
-### This is where the actual dynamic inventory starts
+def strtobool(val):
+    """Convert a string representation of truth to true (1) or false (0).
+    True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
+    are 'n', 'no', 'f', 'false', 'off', and '0'.  Raises ValueError if
+    'val' is anything else.
+    """
+    val = val.lower()
+    if val in ('y', 'yes', 't', 'true', 'on', '1'):
+        return 1
+    elif val in ('n', 'no', 'f', 'false', 'off', '0'):
+        return 0
+    else:
+        raise ValueError("invalid truth value %r" % (val,))
 
-import argparse
-import locale
-import json
-import os
-import subprocess
-import sys
+
+# This is where the actual dynamic inventory starts
+
 
 exec_dir = os.environ.get("ANSIBLE_VAGRANT_DIRECTORY", os.getcwd())
 host_selector = os.environ.get("ANSIBLE_VAGRANT_HOST_SELECTOR", "")
 PY2 = sys.version_info[0] == 2
+
+use_cache = strtobool(os.environ.get("ANSIBLE_VAGRANT_USE_CACHE", "0"))
+cache_max_age = int(os.environ.get("ANSIBLE_VAGRANT_CACHE_MAX_AGE", "600"))
+cache_file = os.environ.get("ANSIBLE_VAGRANT_CACHE_FILE",
+                            os.path.join(os.path.dirname(__file__), ".ansible_vagrant_cache"))
 
 
 def decode(value):
@@ -374,11 +396,20 @@ def parse_args():
 
 
 def list_running_hosts():
+    if use_cache:
+        try:
+            cache = pickle.load(open(cache_file, "rb"))
+            if not cache["expires"] or cache["expires"] > datetime.datetime.now():
+                return cache["hosts"], cache["meta_vars"]
+        except:
+            pass
+
     cmd = "vagrant status --machine-readable"
     status = subprocess.check_output(cmd.split(), cwd=exec_dir).rstrip()
     hosts = []
     hosts_to_look_at = [host.strip() for host in host_selector.split(",") if host]
     meta_vars = dict()
+
     for line in decode(status).split('\n'):
         _, host, key, value = line.split(',')[:4]
         if hosts_to_look_at and host not in hosts_to_look_at:
@@ -386,6 +417,13 @@ def list_running_hosts():
         if key == 'state' and value == 'running':
             hosts.append(host)
             meta_vars.update({host: get_host_details(host)})
+
+    if use_cache:
+        cache_expires = None
+        if cache_max_age != 0:
+            cache_expires = datetime.datetime.now() + datetime.timedelta(0, cache_max_age)
+        pickle.dump(dict(expires=cache_expires, hosts=hosts, meta_vars=meta_vars), open(cache_file, "wb"))
+
     return hosts, meta_vars
 
 

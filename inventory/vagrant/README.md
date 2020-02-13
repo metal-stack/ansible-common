@@ -1,7 +1,15 @@
 # Vagrant Dynamic Inventory
 
-This is a dynamic inventory, using `vagrant ssh-config` commands to build the inventory. Make sure you execute this from the folder where your `Vagrantfile` is located.
+This is a dynamic inventory, using `vagrant ssh-config` commands to build the inventory.
 
-If you want to run it from elsewhere and just point to the Vagrant directory instead, you can define the path to the folder using the `ANSIBLE_VAGRANT_DIRECTORY` environment variable.
+## Configuration
 
-If you only need to put certain hosts into your inventory and you want to speed up performance by not parsing every ssh-config from the machines defined in your `Vagrantfile`, you can set the `ANSIBLE_VAGRANT_HOST_SELECTOR` environment variables. This is a comma-separated list of host names from your `Vagrantfile` to include into the inventory.
+You can parameterize the dynamic inventory by setting environment variables.
+
+| Name                          | Default                                | Description                                                                                                        |
+| ----------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| ANSIBLE_VAGRANT_DIRECTORY     | <current working dir>                  | The folder that contains the Vagrantfile                                                                           |
+| ANSIBLE_VAGRANT_HOST_SELECTOR |                                        | Only queries specific hosts, comma-separated, from your Vagrantfile for ssh-config (can be useful for performance) |
+| ANSIBLE_VAGRANT_USE_CACHE     | false                                  | Whether to cache the inventory in a file or not                                                                    |
+| ANSIBLE_VAGRANT_CACHE_MAX_AGE | 600                                    | Time in seconds until the cache expires                                                                            |
+| ANSIBLE_VAGRANT_CACHE_FILE    | <inventory dir>/.ansible_vagrant_cache | Location of the cache file                                                                                         |

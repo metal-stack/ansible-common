@@ -35,6 +35,7 @@
   command: "{{ helm_bin }} upgrade
     --install
     --namespace {{ helm_target_namespace }}
+    {% if helm_kubeconfig is defined %}--kubeconfig {{ helm_kubeconfig }}{% endif %}
     {% if helm_force is defined and helm_force %}--force{% endif %}
     {% if helm_additional_params is defined and helm_additional_params %}{{ helm_additional_params | join(' ') if helm_additional_params is iterable else helm_additional_params }}{% endif %}
     {% if _helm_chart_combined_params %}--set '{% for k, v in _helm_chart_combined_params.items() %}{{ k }}={{ v }}{% if not loop.last %},{% endif %}{% endfor %}'{% endif %}

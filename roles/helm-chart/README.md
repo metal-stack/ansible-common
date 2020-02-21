@@ -16,6 +16,7 @@ Installs a helm chart.
 | helm_chart_version            |           | The version of the chart                                                                               |
 | helm_value_file_template      |           | The path to a helm value file (e.g. from the role's templates folder)                                  |
 | helm_config_params            |           | Values to pass to helm via the `--set` option                                                          |
+| helm_kubeconfig               |           | Adds the `--kubeconfig` option to point helm to another than the default kubeconfig path               | 
 | helm_force                    |           | Adds the `--force` option                                                                              |
 | helm_repo                     |           | Adds the chart repository URL                                                                          |
 | helm_wait                     |           | Adds the `--wait` option                                                                               |

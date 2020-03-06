@@ -55,7 +55,7 @@ def transpile_ignition_config(ignition_config):
 def _extract_asn(tags):
     asn = None
     for tag in tags:
-        if tag.startswith('machine.metal-pod.io/network.primary.asn='):
+        if tag.startswith('machine.metal-stack.io/network.primary.asn='):
             asn = tag.split('=')[1]
 
     return asn

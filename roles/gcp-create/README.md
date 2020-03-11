@@ -15,7 +15,7 @@ You can use the [gcp-auth](roles/gcp-auth) to authenticate before creating the c
 | gcp_project               | yes       | the gcp project name to use for the invocation                         |
 | gcp_cluster_name          | yes       | the name of the gcp cluster                                            |
 | gcp_location              | yes       | the location to create the gcp cluster in                              |
-| gcp_k8s_version           | yes       | the k8s version of the gcp cluster                                     |
+| gcp_k8s_version           |           | the k8s version of the gcp cluster                                     |
 | gcp_machine_type          | yes       | the machine type to use for the gcp cluster worker nodes               |
 | gcp_disk_size_gb          | yes       | the disk size to use for the gcp cluster worker nodes                  |
 | gcp_initial_node_count    | yes       | the initial worker node count of the gcp cluster                       |

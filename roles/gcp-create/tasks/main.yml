@@ -1,4 +1,14 @@
 ---
+- name: Retrieve list of available K8s versions
+  command: gcloud container get-server-config --zone {{ gcp_location }} --format json
+  register: gcp_k8s_versions
+  when: gcp_k8s_version is not defined
+
+- name: Extract latest K8s version from list
+  set_fact:
+    gcp_k8s_version: "{{ (gcp_k8s_versions.stdout | from_json).get('validMasterVersions')[0] }}"
+  when: gcp_k8s_version is not defined
+
 - name: Create GCP Cluster
   command: gcloud beta container --project {{ gcp_project }} clusters create {{ gcp_cluster_name }}
     --zone {{ gcp_location }}

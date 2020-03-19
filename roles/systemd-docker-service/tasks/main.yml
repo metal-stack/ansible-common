@@ -18,7 +18,7 @@
     state: restarted
     enabled: yes
   when:
-    - result is changed
+    - result is changed or systemd_external_config_changed | bool
     - systemd_start | bool
 
 - name: ensure service is started

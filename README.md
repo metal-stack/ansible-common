@@ -1,6 +1,6 @@
 # Ansible Common
 
-This repository contains shared roles, modules and plugins for Metal Stack.
+This repository contains shared roles, modules and plugins for metal-stack.
 
 <!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
@@ -16,8 +16,8 @@ This repository contains shared roles, modules and plugins for Metal Stack.
 
 | Module Name                               | Description                          | Requirements      |
 | ----------------------------------------- | ------------------------------------ | ----------------- |
-| [metal_ip](library/metal_ip.py)           | Manages Metal Stack IP entities      | metalctl (binary) |
-| [metal_network](library/metal_network.py) | Manages Metal Stack network entities | metalctl (binary) |
+| [metal_ip](library/metal_ip.py)           | Manages metal-stack IP entities      | metalctl (binary) |
+| [metal_network](library/metal_network.py) | Manages metal-stack network entities | metalctl (binary) |
 
 ## Roles
 
@@ -32,14 +32,14 @@ This repository contains shared roles, modules and plugins for Metal Stack.
 | [helm-chart](roles/helm-chart)                         | Deploys a helm chart to a k8s cluster                                                                                 |
 | [metal-k8s-fixes](roles/metal-k8s-fixes)               | Patches for deploying K8s on Metal when using the gerrlingguy Kubernetes role                                         |
 | [systemd-docker-service](roles/systemd-docker-service) | Renders a systemd unit file that runs an application within a docker container                                        |
-| [vagrant-prep](roles/vagrant-prep)                     | Typical preparation for Vagrant machines prior to a Metal Stack deployment                                            |
+| [vagrant-prep](roles/vagrant-prep)                     | Typical preparation for Vagrant machines prior to a metal-stack deployment                                            |
 
 ## Dynamic Inventories
 
 | Inventory Name               | Description                                          |
 | ---------------------------- | ---------------------------------------------------- |
 | [Vagrant](inventory/vagrant) | Builds a dynamic inventory from Vagrant's ssh-config |
-| [Metal](inventory/metal)     | Dynamic inventory from Metal Stack                   |
+| [Metal](inventory/metal)     | Dynamic inventory from metal-stack                   |
 
 ## Filter Plugins
 

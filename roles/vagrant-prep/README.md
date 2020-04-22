@@ -1,3 +1,3 @@
 # Vagrant
 
-Typical machine prep of Vagrant machines when installing Metal Stack on a Vagrant VM.
+Typical machine prep of Vagrant machines when installing metal-stack on a Vagrant VM.

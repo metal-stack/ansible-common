@@ -20,6 +20,10 @@
   when:
     - result is changed or systemd_external_config_changed | bool
     - systemd_start | bool
+  register: start_result
+  until: start_result is success
+  retries: 2
+  delay: 10
 
 - name: ensure service is started
   systemd:

@@ -12,6 +12,9 @@
   when:
     - result is changed
 
+- name: pre-pull docker image
+  command: docker pull {{ systemd_docker_image_name }}:{{ systemd_docker_image_tag }}
+
 - name: start service {{ systemd_service_name }}
   systemd:
     name: "{{ systemd_service_name }}"

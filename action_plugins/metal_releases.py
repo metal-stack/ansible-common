@@ -45,12 +45,15 @@ class ActionModule(ActionBase):
         version = self._task.args.get('version', None)
         image_vector_url_template = self._task.args.get('image_vector_url_template',
                                                         "https://raw.githubusercontent.com/metal-stack/releases/%s/release.yaml")
+        image_vector_mapping = self._task.args.get('mapping')
         smart = boolean(self._task.args.get('smart', True), strict=False)
 
         result["changed"] = False
         result['failed'] = True
         if not version:
             result['msg'] = 'version is required'
+        elif not image_vector_mapping:
+            result['msg'] = 'image_vector_mapping is required'
         else:
             del result['failed']
 
@@ -72,69 +75,22 @@ class ActionModule(ActionBase):
             result["traceback"] = format_exc()
             return self._ensure_invocation(result)
 
-        try:
-            control_plane = image_vector["docker-images"]["metal-stack"]["control-plane"]
-            partition = image_vector["docker-images"]["metal-stack"]["partition"]
-            generic = image_vector["docker-images"]["metal-stack"]["generic"]
-            gardener = image_vector["docker-images"]["metal-stack"]["gardener"]
-            kubernetes = image_vector["docker-images"]["metal-stack"]["kubernetes"]
+        ansible_facts = dict()
+        for k, path in image_vector_mapping.items():
+            if task_vars.get(k) is not None:
+                continue
 
-            third = image_vector["docker-images"]["third-party"]["control-plane"]
+            value = image_vector
+            for p in path.split("."):
+                try:
+                    value = value[p]
+                except KeyError as e:
+                    result["failed"] = True
+                    result["msg"] = "error reading image versions from release vector, %s not found in path: %s" % (
+                        to_native(e), path)
+                    return self._ensure_invocation(result)
 
-            ansible_facts = dict(
-                metal_hammer_image_tag=image_vector["binaries"]["metal-stack"]["metal-hammer"]["version"],
-                metal_hammer_image_url=image_vector["binaries"]["metal-stack"]["metal-hammer"]["url"],
-
-                metal_api_image_tag=control_plane["metal-api"]["tag"],
-                metal_api_image_name=control_plane["metal-api"]["name"],
-                metal_metalctl_image_tag=control_plane["metalctl"]["tag"],
-                metal_metalctl_image_name=control_plane["metalctl"]["name"],
-                metal_masterdata_api_image_tag=control_plane["masterdata-api"]["tag"],
-                metal_masterdata_api_image_name=control_plane["masterdata-api"]["name"],
-                metal_console_image_tag=control_plane["metal-console"]["tag"],
-                metal_console_image_name=control_plane["metal-console"]["name"],
-
-                metal_core_image_tag=partition["metal-core"]["tag"],
-                metal_core_image_name=partition["metal-core"]["name"],
-                pixiecore_image_tag=partition["pixiecore"]["tag"],
-                pixiecore_image_name=partition["pixiecore"]["name"],
-
-                metal_db_backup_restore_sidecar_image_tag=generic["backup-restore-sidecar"]["tag"],
-                metal_db_backup_restore_sidecar_image_name=generic["backup-restore-sidecar"]["name"],
-                ipam_db_backup_restore_sidecar_image_tag=generic["backup-restore-sidecar"]["tag"],
-                ipam_db_backup_restore_sidecar_image_name=generic["backup-restore-sidecar"]["name"],
-                masterdata_db_backup_restore_sidecar_image_tag=generic["backup-restore-sidecar"]["tag"],
-                masterdata_db_backup_restore_sidecar_image_name=generic["backup-restore-sidecar"]["name"],
-
-                gardener_extension_provider_metal_image_tag=gardener["gardener-extension-provider-metal"]["tag"],
-                gardener_extension_provider_metal_image_name=gardener["gardener-extension-provider-metal"]["name"],
-                gardener_os_controller_image_tag=gardener["os-metal-extension"]["tag"],
-                gardener_os_controller_image_name=gardener["os-metal-extension"]["name"],
-
-                csi_lvm_image_tag=kubernetes["csi-lvm-controller"]["tag"],
-                csi_lvm_image_name=kubernetes["csi-lvm-controller"]["name"],
-                gardener_metal_cloud_controller_manager_image_tag=kubernetes["metal-ccm"]["tag"],
-                gardener_metal_cloud_controller_manager_image_name=kubernetes["metal-ccm"]["name"],
-
-                nsq_image_tag=third["nsq"]["tag"],
-                nsq_image_name=third["nsq"]["name"],
-                ipam_db_image_tag=third["ipam-db"]["tag"],
-                ipam_db_image_name=third["ipam-db"]["name"],
-                masterdata_db_image_tag=third["masterdata-db"]["tag"],
-                masterdata_db_image_name=third["masterdata-db"]["name"],
-                metal_db_image_tag=third["metal-db"]["tag"],
-                metal_db_image_name=third["metal-db"]["name"],
-            )
-
-        except KeyError as e:
-            result["failed"] = True
-            result["msg"] = "error reading image versions from release vector, key not found: %s" % e
-            return self._ensure_invocation(result)
-
-        # do not override existing variables
-        remove = [k for k in ansible_facts if task_vars.get(k) is not None]
-        for k in remove:
-            del ansible_facts[k]
+            ansible_facts[k] = value
 
         ansible_facts["_metal_stack_releases_already_executed"] = True
         result["ansible_facts"] = ansible_facts

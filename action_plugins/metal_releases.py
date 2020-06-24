@@ -85,10 +85,12 @@ class ActionModule(ActionBase):
                 try:
                     value = value[p]
                 except KeyError as e:
-                    result["failed"] = True
-                    result["msg"] = "error reading image versions from release vector, %s not found in path: %s" % (
-                        to_native(e), path)
-                    return self._ensure_invocation(result)
+                    display.warning(
+                        """error reading image version from release vector, %s not found in path: %s 
+                        
+                        (does the mapping match the given %s release?)""" % (
+                            to_native(e), path, version))
+                    continue
 
             ansible_facts[k] = value
 

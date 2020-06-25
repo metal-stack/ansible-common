@@ -11,6 +11,7 @@ from module_utils import metal
 MODULES_PATH = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'library')
 MODULE_UTILS_PATH = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'module_utils')
 FILTER_PLUGINS_PATH = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'filter_plugins')
+ACTION_PLUGINS_PATH = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'action_plugins')
 
 
 def set_module_args(args):

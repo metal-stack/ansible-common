@@ -14,10 +14,11 @@ This repository contains shared roles, modules and plugins for metal-stack.
 
 ## Modules
 
-| Module Name                               | Description                          | Requirements      |
-| ----------------------------------------- | ------------------------------------ | ----------------- |
-| [metal_ip](library/metal_ip.py)           | Manages metal-stack IP entities      | metalctl (binary) |
-| [metal_network](library/metal_network.py) | Manages metal-stack network entities | metalctl (binary) |
+| Module Name                               | Description                                                | Requirements      |
+| ----------------------------------------- | ---------------------------------------------------------- | ----------------- |
+| [setup_release](library/setup_release.py) | Setup plugin that resolves variables from a release vector |                   |
+| [metal_ip](library/metal_ip.py)           | Manages metal-stack IP entities                            | metalctl (binary) |
+| [metal_network](library/metal_network.py) | Manages metal-stack network entities                       | metalctl (binary) |
 
 ## Roles
 

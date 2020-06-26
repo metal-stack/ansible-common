@@ -71,7 +71,7 @@ class ActionModule(ActionBase):
             recursive = release.get('recursive', True)
 
             release_key = self.release_name_to_var(name) + "_release"
-            release_info = task_vars.get(release_key, dict())
+            release_info = release.get('info', task_vars.get(release_key, dict()))
             release_url_template = release_info.get("url_template")
             release_mapping = release_info.get("mapping")
             release_nested = release_info.get("nested", list()) if recursive else list()
@@ -82,7 +82,7 @@ class ActionModule(ActionBase):
             elif not name:
                 result["msg"] = "name is required in a release"
             elif not release_info:
-                result["msg"] = "release info variable %s is not defined" % release_key
+                result["msg"] = "info is required in a release (magic variable '%s' also undefined)" % release_key
             elif not release_url_template:
                 result["msg"] = "url_template is required in a release"
             elif not release_mapping:

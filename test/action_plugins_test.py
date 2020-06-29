@@ -5,7 +5,7 @@ from test import ACTION_PLUGINS_PATH
 from mock import patch, MagicMock, call
 
 sys.path.insert(0, ACTION_PLUGINS_PATH)
-from setup_release import ActionModule
+from setup_yaml import ActionModule
 
 SAMPLE_VECTOR_01 = """
 docker-images:
@@ -35,7 +35,7 @@ class MetalReleaseTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
-    @patch("setup_release.open_url")
+    @patch("setup_yaml.open_url")
     def test_resolves(self, mock):
         m = MagicMock()
         m.getcode.return_value = 200
@@ -65,7 +65,7 @@ class MetalReleaseTest(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    @patch("setup_release.open_url")
+    @patch("setup_yaml.open_url")
     def test_nested_resolve(self, mock):
         m1 = MagicMock()
         m1.getcode.return_value = 200

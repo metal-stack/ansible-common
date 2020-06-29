@@ -13,44 +13,44 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: setup_release
+module: setup_yaml
 short_description: Resolves variables from a remote YAML file
 version_added: "2.9"
 description:
-    - This module downloads a YAML file and maps contents of it to ansible_facts according to a given variable mapping. 
+    - This module maps contents of a remote YAML file to ansible_facts according to a given variable mapping. 
     - Within a YAML file, it is also possible to point to other YAML files, which will then be resolved recursively.
-    - This module picks up some variables "magically", which makes the module very versatile and easy to read
+    - This module can pick up some variables "magically", which makes the module very versatile
       but also causes some conventions that need to be followed when using this module. 
     - Please check out the examples of how to use it.
 options:
-    releases:
+    files:
         description:
-            - A list of releases to be resolved.
-            - The module will just skip if this variable is not provided.
-            - This parameter can be "magically" provided by defining the variable `setup_release`
+            - A list of files to be resolved.
+            - The module will not fail but skip if this variable is not provided.
+            - This parameter can be "magically" provided by defining the variable `setup_yaml`
         required: false
     smart:
         description:
             - Will make this module skip in case it was already executed. 
               Sets a marker into the vars to prevent repeated execution.
-            - This parameter can be "magically" provided by defining the variable `setup_release_smart`
+            - This parameter can be "magically" provided by defining the variable `setup_yaml_smart`
         required: false
         default: true
     recursive:
         description:
-            - Can be used to disable recursive resolution of other release vectors. This can be useful for development 
-              purposes in case yu want to use different versions than defined (development purposes).
+            - Can be used to disable recursive resolution of other files. This can be useful in certain situations.
         required: false
         default: true
 author:
     - metal-stack
 notes:
-    - We typically use this module for dynamically providing docker image version variables to ansible roles. This 
-      explains the name of the module. Often, we also call the contents of the downloaded YAML file a release vector.
+    - We typically use this module for dynamically providing docker image version variables to ansible roles. 
+      In the metal-stack docs, we will also call the contents of the downloaded YAML file a release vector.
 '''
 
 EXAMPLES = '''
-# Assume a YAML file containing release versions of docker-images at https://example.com/v1.0.0/example.yaml:
+# Assume a YAML file containing release versions of docker-images at https://example.com/v1.0.0/example.yaml, which
+# looks like this:
 #
 # ---
 # docker-images:
@@ -62,16 +62,15 @@ EXAMPLES = '''
 # Let's now define the following task:
 
 - name: gather release versions
-  setup_release:
-    releases:
-      - name: example
-        version: v1.0.0
+  setup_yaml:
+    files:
+      - version: v1.0.0
         info:
           url_template: https://example.com/%s/example.yaml
           mapping:
             hello_world_image_tag: "docker-images.hello-world.tag"
-        
-# The module can now do its job. The expected output will be:
+
+# The expected module return will be:
 # {"ansible_facts": {"hello_world_image_tag": "v0.2.0"}}
 #
 # Remember that ansible_facts are automatically added to the host vars by ansible, such that they are immediately
@@ -82,8 +81,8 @@ EXAMPLES = '''
 # in your playbook:
 #
 # ---
-# setup_release:
-#   - name: example
+# setup_yaml:
+#   - var: example_release
 #     version: v1.0.0
 #
 # example_release:
@@ -92,14 +91,10 @@ EXAMPLES = '''
 #    hello_world_image_tag: "docker-images.hello-world.tag"
 # ...
 #
-# You could then also just write the task definition like this:
+# You could then just write a task definition like this:
 
 - name: gather release versions
-  setup_release:
+  setup_yaml:
 
-# For the "magic" lookup of the release info, the module tries to find a variable composed from the release name.
-# The expected variable has the name of the release with `_release` as a postfix. Hyphens will be replaced by 
-# underscores.
-#
-# The "magic" lookup is extremely helpful because release infos can be defined anywhere else, e.g. from external roles.
+# The "magic" lookup is extremely helpful because release infos can be provided by external roles.
 '''

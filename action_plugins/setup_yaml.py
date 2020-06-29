@@ -18,7 +18,7 @@ except ImportError:
 
 
 class ActionModule(ActionBase):
-    ALREADY_RESOLVED_MARKER = "_releases_already_resolved"
+    ALREADY_RESOLVED_MARKER = "_yaml_files_already_resolved"
 
     def _ensure_invocation(self, result):
         # NOTE: adding invocation arguments here needs to be kept in sync with
@@ -44,15 +44,15 @@ class ActionModule(ActionBase):
 
         self._supports_check_mode = True
 
-        releases = self._task.args.get('releases', task_vars.get('setup_release'))
-        smart = boolean(self._task.args.get('smart', task_vars.get('setup_release_smart', True)), strict=False)
-        if not releases:
+        files = self._task.args.get('files', task_vars.get('setup_yaml'))
+        smart = boolean(self._task.args.get('smart', task_vars.get('setup_yaml_smart', True)), strict=False)
+        if not files:
             result["skipped"] = True
             return result
 
         result["failed"] = True
-        if not isinstance(releases, list):
-            result["msg"] = "releases must be a list"
+        if not isinstance(files, list):
+            result["msg"] = "files must be a list"
         else:
             del result["failed"]
 
@@ -65,35 +65,34 @@ class ActionModule(ActionBase):
 
         result["changed"] = False
 
-        for release in releases:
-            version = release.get('version')
-            name = release.get('name', '')
-            recursive = release.get('recursive', True)
+        for f in files:
+            version = f.get('version')
+            recursive = f.get('recursive', True)
+            info = f.get('info')
+            info_var = f.get('var')
+            if not info and info_var:
+                info = task_vars.get(info_var)
 
-            release_key = self.release_name_to_var(name) + "_release"
-            release_info = release.get('info', task_vars.get(release_key, dict()))
-            release_url_template = release_info.get("url_template")
-            release_mapping = release_info.get("mapping")
-            release_nested = release_info.get("nested", list()) if recursive else list()
+            url_template = info.get("url_template")
+            mapping = info.get("mapping")
+            nested = info.get("nested", list()) if recursive else list()
 
             result["failed"] = True
             if not version:
-                result["msg"] = "version is required in a release"
-            elif not name:
-                result["msg"] = "name is required in a release"
-            elif not release_info:
-                result["msg"] = "info is required in a release (magic variable '%s' also undefined)" % release_key
-            elif not release_url_template:
-                result["msg"] = "url_template is required in a release"
-            elif not release_mapping:
-                result["msg"] = "mapping is required in a release"
+                result["msg"] = "version is required in a file"
+            elif not info:
+                result["msg"] = "info is required in a file"
+            elif not url_template:
+                result["msg"] = "url_template is required in a file"
+            elif not mapping:
+                result["msg"] = "mapping is required in a file"
             else:
                 del result["failed"]
 
             if result.get("failed"):
                 return result
 
-            result = self.resolve(release_url_template, version, release_mapping, release_nested, task_vars, result)
+            result = self.resolve(url_template, version, mapping, nested, task_vars, result)
             if result.get("failed"):
                 return result
 
@@ -116,7 +115,7 @@ class ActionModule(ActionBase):
         url = url_template % version
         try:
             rsp = open_url(url)
-            image_vector = safe_load(rsp.read())
+            f = safe_load(rsp.read())
         except Exception as e:
             result["failed"] = True
             result["msg"] = "error getting image vector from url: %s" % url
@@ -144,8 +143,8 @@ class ActionModule(ActionBase):
                 return result
 
             try:
-                u = self.resolve_path(image_vector, url_template_path)
-                v = self.resolve_path(image_vector, version_path)
+                u = self.resolve_path(f, url_template_path)
+                v = self.resolve_path(f, version_path)
                 m = self.resolve_path(task_vars, mapping_var)
             except KeyError as e:
                 result["failed"] = True
@@ -165,12 +164,12 @@ class ActionModule(ActionBase):
                 continue
 
             try:
-                value = self.resolve_path(image_vector, path)
+                value = self.resolve_path(f, path)
             except KeyError as e:
                 display.warning(
-                    """error reading image version from release vector, %s not found in path: %s 
+                    """error reading variable from file, variable %s not found in path: %s 
                     
-                    (does the mapping match the given release '%s'?)""" % (
+                    (does the mapping match the version ('%s') of the YAML file?)""" % (
                         to_native(e), path, version))
                 continue
 
@@ -186,7 +185,3 @@ class ActionModule(ActionBase):
         for p in path.split("."):
             value = value[p]
         return value
-
-    @staticmethod
-    def release_name_to_var(name):
-        return name.lower().replace("-", "_")

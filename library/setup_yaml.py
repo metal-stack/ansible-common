@@ -81,7 +81,7 @@ EXAMPLES = '''
 # ---
 # setup_yaml:
 #   - url: https://example.com/v1.0.0/example.yaml
-#     var: example_release
+#     meta_var: example_release
 #
 # example_release:
 #  mapping:
@@ -94,4 +94,22 @@ EXAMPLES = '''
   setup_yaml:
 
 # The "magic" lookup is extremely helpful because the "example_release" variable can be provided by external roles.
+# This could mean that the direct consumer does not need to know the variable mapping.
+#
+# It is also possible to nest yaml files into each other, making a recursive resolution:
+#
+#
+- name: gather release versions
+  setup_yaml:
+    files:
+      - url: https://example.com/v1.0.0/example.yaml
+        mapping:
+          hello_world_image_tag: "docker-images.hello-world.tag"
+        nested:
+          - url_path: "other-files.example-2.url"
+            mapping:
+              hello_world_2_image_tag: "docker-images.hello-world-2.tag"
+#
+# Recursive resolution can also use the "magic" lookup!
+#
 '''

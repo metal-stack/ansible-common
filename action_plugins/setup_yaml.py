@@ -66,44 +66,23 @@ class ActionModule(ActionBase):
         result["changed"] = False
 
         for f in files:
-            version = f.get('version')
-            recursive = f.get('recursive', True)
-            info = f.get('info')
-            info_var = f.get('var')
-            if not info and info_var:
-                info = task_vars.get(info_var)
+            url = f.get("url")
+            recursive = f.get("recursive", True)
+            var = f.get("meta_var")
+            mapping = f.get("mapping", task_vars.get(var, dict()).get("mapping"))
+            nested = f.get("nested", task_vars.get(var, dict()).get("nested", list())) if recursive else list()
 
-            url_template = info.get("url_template")
-            mapping = info.get("mapping")
-            nested = info.get("nested", list()) if recursive else list()
-
-            result["failed"] = True
-            if not version:
-                result["msg"] = "version is required in a file"
-            elif not info:
-                result["msg"] = "info is required in a file"
-            elif not url_template:
-                result["msg"] = "url_template is required in a file"
-            elif not mapping:
-                result["msg"] = "mapping is required in a file"
-            else:
-                del result["failed"]
-
-            if result.get("failed"):
-                return result
-
-            result = self.resolve(url_template, version, mapping, nested, task_vars, result)
+            result = self.resolve(url, mapping, nested, task_vars, result)
             if result.get("failed"):
                 return result
 
         return self._ensure_invocation(result)
 
-    def resolve(self, url_template, version, mapping, nested, task_vars, result):
+    def resolve(self, url, mapping, nested, task_vars, result):
         result["failed"] = True
-        if not version:
-            result["msg"] = "version is required"
-        elif not url_template:
-            result["msg"] = "url_template is required"
+
+        if not url:
+            result["msg"] = "url is required"
         elif not mapping:
             result["msg"] = "mapping is required"
         else:
@@ -112,7 +91,6 @@ class ActionModule(ActionBase):
         if result.get("failed"):
             return result
 
-        url = url_template % version
         try:
             rsp = open_url(url)
             f = safe_load(rsp.read())
@@ -124,18 +102,17 @@ class ActionModule(ActionBase):
             return result
 
         for n in nested:
-            url_template_path = n.get("url_template_path")
-            version_path = n.get("version_path")
-            mapping_var = n.get("mapping_var")
-            next_nested = n.get("nested", [])
+            url_path = n.get("url_path")
+            recursive = n.get("recursive", True)
+            var = n.get("meta_var")
+            nested_mapping = n.get("mapping", task_vars.get(var, dict()).get("mapping"))
+            next_nested = n.get("nested", task_vars.get(var, dict()).get("nested", list())) if recursive else list()
 
             result["failed"] = True
-            if not url_template_path:
-                result["msg"] = "url_template_path is required in nested"
-            elif not version_path:
-                result["msg"] = "version_path is required in nested"
-            elif not mapping_var:
-                result["msg"] = "mapping_var is required in nested"
+            if not url_path:
+                result["msg"] = "url_path is required in nested"
+            elif not nested_mapping:
+                result["msg"] = "mapping is required in nested"
             else:
                 del result["failed"]
 
@@ -143,17 +120,15 @@ class ActionModule(ActionBase):
                 return result
 
             try:
-                u = self.resolve_path(f, url_template_path)
-                v = self.resolve_path(f, version_path)
-                m = self.resolve_path(task_vars, mapping_var)
+                u = self.resolve_path(f, url_path)
             except KeyError as e:
                 result["failed"] = True
-                result["msg"] = "error resolving path: %s" % url_template_path
+                result["msg"] = "error resolving path in nested"
                 result["error"] = to_native(e)
                 result["traceback"] = format_exc()
                 return result
 
-            result = self.resolve(u, v, m, next_nested, task_vars, result)
+            result = self.resolve(u, nested_mapping, next_nested, task_vars, result)
             if result.get("failed"):
                 return result
 
@@ -169,8 +144,8 @@ class ActionModule(ActionBase):
                 display.warning(
                     """error reading variable from file, variable %s not found in path: %s 
                     
-                    (does the mapping match the version ('%s') of the YAML file?)""" % (
-                        to_native(e), path, version))
+                    (is the mapping appropriate for %s?)""" % (
+                        to_native(e), path, url))
                 continue
 
             ansible_facts[k] = value

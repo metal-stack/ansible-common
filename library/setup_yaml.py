@@ -64,11 +64,9 @@ EXAMPLES = '''
 - name: gather release versions
   setup_yaml:
     files:
-      - version: v1.0.0
-        info:
-          url_template: https://example.com/%s/example.yaml
-          mapping:
-            hello_world_image_tag: "docker-images.hello-world.tag"
+      - url: https://example.com/v1.0.0/example.yaml
+        mapping:
+          hello_world_image_tag: "docker-images.hello-world.tag"
 
 # The expected module return will be:
 # {"ansible_facts": {"hello_world_image_tag": "v0.2.0"}}
@@ -82,19 +80,18 @@ EXAMPLES = '''
 #
 # ---
 # setup_yaml:
-#   - var: example_release
-#     version: v1.0.0
+#   - url: https://example.com/v1.0.0/example.yaml
+#     var: example_release
 #
 # example_release:
-#  url_template: https://example.com/%s/example.yaml
 #  mapping:
 #    hello_world_image_tag: "docker-images.hello-world.tag"
 # ...
 #
-# You could then just write a task definition like this:
+# Then, you could just write a task definition like this:
 
 - name: gather release versions
   setup_yaml:
 
-# The "magic" lookup is extremely helpful because release infos can be provided by external roles.
+# The "magic" lookup is extremely helpful because the "example_release" variable can be provided by external roles.
 '''

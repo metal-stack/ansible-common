@@ -1,5 +1,7 @@
 import sys
 import unittest
+from ansible.template import Templar
+from ansible.parsing.dataloader import DataLoader
 
 from test import ACTION_PLUGINS_PATH
 from mock import patch, MagicMock, call
@@ -58,6 +60,9 @@ class MetalReleaseTest(unittest.TestCase):
         self.play_context = MagicMock()
         self.play_context.check_mode = False
         self.connection = MagicMock()
+        self.loader = DataLoader()
+        self.templar = Templar(loader=self.loader)
+
         self.maxDiff = None
 
     def tearDown(self):
@@ -69,7 +74,7 @@ class MetalReleaseTest(unittest.TestCase):
         self.task.action = "setup_yaml"
         self.task.async_val = False
         self.task.args = args
-        return ActionModule(self.task, self.connection, self.play_context, loader=None, templar=None,
+        return ActionModule(self.task, self.connection, self.play_context, loader=self.loader, templar=self.templar,
                             shared_loader_obj=None)
 
     @patch("setup_yaml.open_url")

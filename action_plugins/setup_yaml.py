@@ -66,9 +66,9 @@ class ActionModule(ActionBase):
         result["changed"] = False
 
         for f in files:
-            url = f.get("url")
+            url = self._templar.template(f.get("url"))
             recursive = f.get("recursive", True)
-            var = f.get("meta_var")
+            var = self._templar.template(f.get("meta_var"))
             mapping = f.get("mapping", task_vars.get(var, dict()).get("mapping"))
             nested = f.get("nested", task_vars.get(var, dict()).get("nested", list())) if recursive else list()
 
@@ -102,9 +102,9 @@ class ActionModule(ActionBase):
             return result
 
         for n in nested:
-            url_path = n.get("url_path")
+            url_path = self._templar.template(n.get("url_path"))
             recursive = n.get("recursive", True)
-            var = n.get("meta_var")
+            var = self._templar.template(n.get("meta_var"))
             nested_mapping = n.get("mapping", task_vars.get(var, dict()).get("mapping"))
             next_nested = n.get("nested", task_vars.get(var, dict()).get("nested", list())) if recursive else list()
 

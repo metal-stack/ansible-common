@@ -1,6 +1,0 @@
----
-scope_filters:
-  - name: project
-    value: <project-name>
-static_machine_ip_mapping:
-  node01: 1.2.3.4

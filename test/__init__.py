@@ -6,8 +6,6 @@ import unittest
 from ansible.module_utils import basic
 from ansible.module_utils._text import to_bytes
 
-from module_utils import metal
-
 MODULES_PATH = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'library')
 MODULE_UTILS_PATH = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'module_utils')
 FILTER_PLUGINS_PATH = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), 'filter_plugins')
@@ -63,14 +61,3 @@ class AnsibleCommon(unittest.TestCase):
                                                       fail_json=fail_json)
         self.mock_module_helper.start()
         self.addCleanup(self.mock_module_helper.stop)
-
-
-class Mock:
-    class Metalctl:
-        PATH = os.path.join(os.path.dirname(__file__), "mock", "metalctl")
-
-        @staticmethod
-        def read(filename):
-            path = os.path.join(Mock.Metalctl.PATH, filename)
-            with open(path, "r") as f:
-                return f.read()

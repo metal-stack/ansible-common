@@ -17,8 +17,6 @@ This repository contains shared roles, modules and plugins for metal-stack.
 | Module Name                               | Description                                                  | Requirements      |
 | ----------------------------------------- | ------------------------------------------------------------ | ----------------- |
 | [setup_yaml](library/setup_yaml.py)       | Setup plugin that resolves variables from a remote YAML file |                   |
-| [metal_ip](library/metal_ip.py)           | Manages metal-stack IP entities                              | metalctl (binary) |
-| [metal_network](library/metal_network.py) | Manages metal-stack network entities                         | metalctl (binary) |
 
 ## Roles
 
@@ -40,7 +38,6 @@ This repository contains shared roles, modules and plugins for metal-stack.
 | Inventory Name               | Description                                          |
 | ---------------------------- | ---------------------------------------------------- |
 | [Vagrant](inventory/vagrant) | Builds a dynamic inventory from Vagrant's ssh-config |
-| [Metal](inventory/metal)     | Dynamic inventory from metal-stack                   |
 
 ## Filter Plugins
 

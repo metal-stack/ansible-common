@@ -5,4 +5,4 @@ helm_config_params: {}
 helm_chart_remote_temp: /tmp/helm-chart
 helm_chart_inject_config_hash: false
 helm_wait: true
-helm_force: true
+helm_force: false

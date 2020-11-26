@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from traceback import format_exc
-from yaml import safe_load
+from yaml import safe_load, safe_dump
 
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase
@@ -68,17 +68,18 @@ class ActionModule(ActionBase):
         for f in files:
             url = self._templar.template(f.get("url"))
             recursive = f.get("recursive", True)
+            replace = f.get("replace", [])
             var = self._templar.template(f.get("meta_var"))
             mapping = f.get("mapping", task_vars.get(var, dict()).get("mapping"))
             nested = f.get("nested", task_vars.get(var, dict()).get("nested", list())) if recursive else list()
 
-            result = self.resolve(url, mapping, nested, task_vars, result)
+            result = self.resolve(url, replace, mapping, nested, task_vars, result)
             if result.get("failed"):
                 return result
 
         return self._ensure_invocation(result)
 
-    def resolve(self, url, mapping, nested, task_vars, result):
+    def resolve(self, url, replace, mapping, nested, task_vars, result):
         result["failed"] = True
 
         if not url:
@@ -100,6 +101,13 @@ class ActionModule(ActionBase):
             result["error"] = to_native(e)
             result["traceback"] = format_exc()
             return result
+
+        for r in replace:
+            if r.get("key") is None or r.get("old") is None or r.get("new") is None:
+                result["msg"] = "replace must contain and dict with the keys for 'key', 'old' and 'new'"
+                result["failed"] = True
+                return result
+            ActionModule.replace_key_value(f, r.get("key"), r.get("old"), r.get("new"))
 
         for n in nested:
             url_path = self._templar.template(n.get("url_path"))
@@ -128,7 +136,7 @@ class ActionModule(ActionBase):
                 result["traceback"] = format_exc()
                 return result
 
-            result = self.resolve(u, nested_mapping, next_nested, task_vars, result)
+            result = self.resolve(u, replace, nested_mapping, next_nested, task_vars, result)
             if result.get("failed"):
                 return result
 
@@ -160,3 +168,17 @@ class ActionModule(ActionBase):
         for p in path.split("."):
             value = value[p]
         return value
+
+    @staticmethod
+    def replace_key_value(data, key, old, new):
+        if not isinstance(data, dict):
+            return
+
+        if key in data:
+            to_replace = data[key]
+            if isinstance(to_replace, str):
+                data[key] = to_replace.replace(old, new)
+
+        for k, v in data.items():
+            if isinstance(v, dict):
+                ActionModule.replace_key_value(v, key, old, new)

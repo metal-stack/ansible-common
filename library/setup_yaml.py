@@ -41,6 +41,11 @@ options:
             - Can be used to disable recursive resolution of other files. This can be useful in certain situations.
         required: false
         default: true
+    replace:
+        description:
+            - A list of replacements that can be used for recursively replacing string values for given keys in
+              the remote file content.
+        required: false
 author:
     - metal-stack
 notes:

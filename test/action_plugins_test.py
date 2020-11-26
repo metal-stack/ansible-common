@@ -54,7 +54,7 @@ def open_url_mock(return_value, return_code=200):
     return m
 
 
-class MetalReleaseTest(unittest.TestCase):
+class SetupYAMLTest(unittest.TestCase):
     def setUp(self):
         self.task = MagicMock(Task)
         self.play_context = MagicMock()
@@ -304,6 +304,34 @@ class MetalReleaseTest(unittest.TestCase):
         mock.assert_called_with('https://raw.githubusercontent.com/metal-stack/releases/master/release.yaml')
 
         expected = dict({
+            module.ALREADY_RESOLVED_MARKER: True,
+        })
+
+        self.assertIn("ansible_facts", actual)
+        self.assertEqual(expected, actual["ansible_facts"])
+
+    @patch("setup_yaml.open_url")
+    def test_resolves_with_replace(self, mock):
+        mock.return_value = open_url_mock(SAMPLE_VECTOR_01)
+        module_args = dict(
+            files=[
+                dict(
+                    url="https://raw.githubusercontent.com/metal-stack/releases/master/release.yaml",
+                    mapping=dict(metal_api_image_name="docker-images.metal-stack.control-plane.metal-api.name"),
+                    replace=[dict(key="name", old="metalstack/", new="somewhere.io/metal-stack/")],
+                ),
+            ],
+        )
+        task_vars = dict()
+        module = self.initModule(args=module_args)
+
+        actual = module.run(tmp=None, task_vars=task_vars)
+
+        mock.assert_called()
+        mock.assert_called_with('https://raw.githubusercontent.com/metal-stack/releases/master/release.yaml')
+
+        expected = dict({
+            "metal_api_image_name": "somewhere.io/metal-stack/metal-api",
             module.ALREADY_RESOLVED_MARKER: True,
         })
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from traceback import format_exc
-from yaml import safe_load, safe_dump
+from yaml import safe_load
 
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase

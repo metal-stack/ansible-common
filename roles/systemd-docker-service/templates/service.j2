@@ -1,10 +1,9 @@
 [Unit]
 Description={{ systemd_service_name }} {{ systemd_docker_image_tag }}
 After={{ systemd_service_after }}
-Requires={{ systemd_service_requires }}
+Wants={{ systemd_service_wants }}
 
 [Service]
-ExecStartPre=-/usr/bin/docker pull {{ systemd_docker_image_name }}:{{ systemd_docker_image_tag }}
 ExecStartPre=-/usr/bin/docker rm --force --volumes %n
 ExecStart=/usr/bin/docker run --name=%n \
 {% for key, value in systemd_service_environment.items() %}

@@ -36,6 +36,9 @@ ExecStart=/usr/bin/docker run --name=%n \
 {% if systemd_docker_network %}
     --network {{ systemd_docker_network }} \
 {% endif %}
+{% for dns in systemd_docker_dns %}
+    --dns {{ dns }} \
+{% endfor %}
     {{ systemd_docker_image_name }}:{{ systemd_docker_image_tag }} {% if systemd_docker_command %}{{ systemd_docker_command | join(" ") if systemd_docker_command is iterable else systemd_docker_command }}{% endif %}
 
 ExecStop=/usr/bin/docker stop %n

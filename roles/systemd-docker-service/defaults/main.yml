@@ -4,6 +4,7 @@ systemd_external_config_changed: no
 systemd_service_environment: {}
 systemd_docker_network:
 systemd_docker_command:
+systemd_docker_dns: []
 systemd_docker_volumes: []
 systemd_docker_cap_add: []
 systemd_docker_ports: []

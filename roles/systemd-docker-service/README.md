@@ -13,6 +13,7 @@ Renders a systemd unit file that runs an application within a docker container.
 | systemd_docker_network            |           | The docker network to use                                                             |
 | systemd_docker_command            |           | The command to tun the docker container with                                          |
 | systemd_docker_volumes            |           | Volumes to mount into the docker container                                            |
+| systemd_docker_dns                |           | DNS server IP addresses to use instead host configuration                             |
 | systemd_docker_cap_add            |           | Additional capabilities of the docker container                                       |
 | systemd_docker_ports              |           | Ports of the docker container to expose                                               |
 | systemd_docker_host_to_ip_mapping |           | Adds additional hosts to the docker container                                         |
@@ -24,7 +25,7 @@ Renders a systemd unit file that runs an application within a docker container.
 | systemd_service_timeout_start_sec |           | The number of seconds to wait before starting the systemd service                     |
 | systemd_service_timeout_stop_sec  |           | The number of seconds to wait for the systemd service to stop                         |
 | systemd_service_after             |           | The systemd unit after dependencies                                                   |
-| systemd_service_wants             |           | The systemd unit wants dependencies                                                   | 
+| systemd_service_wants             |           | The systemd unit wants dependencies                                                   |
 | systemd_start                     |           | Starts the systemd service after rendering the template                               |
 | systemd_external_config_changed   |           | Indicates that the systemd should be restarted because external configuration changed |
 

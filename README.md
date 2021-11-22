@@ -29,9 +29,7 @@ This repository contains shared roles, modules and plugins for metal-stack.
 | [group-k8s](roles/group-k8s)                           | Dynamically creates groups called `k8s-masters` and `k8s-workers` from vars defined `master_nodes` and `worker_nodes` |
 | [helm](roles/helm)                                     | Deploys [helm](https://helm.sh/)                                                                                      |
 | [helm-chart](roles/helm-chart)                         | Deploys a helm chart to a k8s cluster                                                                                 |
-| [metal-k8s-fixes](roles/metal-k8s-fixes)               | Patches for deploying K8s on Metal when using the gerrlingguy Kubernetes role                                         |
 | [systemd-docker-service](roles/systemd-docker-service) | Renders a systemd unit file that runs an application within a docker container                                        |
-| [vagrant-prep](roles/vagrant-prep)                     | Typical preparation for Vagrant machines prior to a metal-stack deployment                                            |
 
 ## Dynamic Inventories
 

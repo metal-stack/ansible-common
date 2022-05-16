@@ -2,13 +2,13 @@
 
 This repository contains shared roles, modules and plugins for metal-stack.
 
-<!-- TOC depthfrom:2 depthto:6 withlinks:false updateonsave:false orderedlist:false -->
+<!-- TOC depthfrom:2 depthto:6 withlinks:true updateonsave:true orderedlist:false -->
 
-- Modules
-- Roles
-- Dynamic Inventories
-- Filter Plugins
-- Usage
+- [Modules](#modules)
+- [Roles](#roles)
+- [Dynamic Inventories](#dynamic-inventories)
+- [Filter Plugins](#filter-plugins)
+- [Usage](#usage)
 
 <!-- /TOC -->
 

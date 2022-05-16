@@ -2,13 +2,13 @@
 
 This repository contains shared roles, modules and plugins for metal-stack.
 
-<!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
+<!-- TOC depthfrom:2 depthto:6 withlinks:false updateonsave:false orderedlist:false -->
 
-- [Modules](#modules)
-- [Roles](#roles)
-- [Dynamic Inventories](#dynamic-inventories)
-- [Filter Plugins](#filter-plugins)
-- [Usage](#usage)
+- Modules
+- Roles
+- Dynamic Inventories
+- Filter Plugins
+- Usage
 
 <!-- /TOC -->
 
@@ -27,7 +27,6 @@ This repository contains shared roles, modules and plugins for metal-stack.
 | [gcp-create](roles/gcp-create)                         | Creates a Kubernetes cluster at Google Cloud                                                                          |
 | [gcp-destroy](roles/gcp-destroy)                       | Destroys a Kubernetes cluster at Google Cloud                                                                         |
 | [group-k8s](roles/group-k8s)                           | Dynamically creates groups called `k8s-masters` and `k8s-workers` from vars defined `master_nodes` and `worker_nodes` |
-| [helm](roles/helm)                                     | Deploys [helm](https://helm.sh/)                                                                                      |
 | [helm-chart](roles/helm-chart)                         | Deploys a helm chart to a k8s cluster                                                                                 |
 | [systemd-docker-service](roles/systemd-docker-service) | Renders a systemd unit file that runs an application within a docker container                                        |
 
@@ -52,7 +51,7 @@ It's convenient to use ansible-galaxy in order to use this project. For your pro
 ```yaml
 - src: https://github.com/metal-stack/ansible-common.git
   name: ansible-common
-  version: v0.4.0
+  version: v0.6.1
 ```
 
 You can then download the roles with the following command:

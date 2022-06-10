@@ -20,15 +20,16 @@ This repository contains shared roles, modules and plugins for metal-stack.
 
 ## Roles
 
-| Role Name                                              | Description                                                                                                           |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| [docker-over-tcp](roles/docker-over-tcp)               | Exposes the Docker socket via TCP                                                                                     |
-| [gcp-auth](roles/gcp-auth)                             | Authenticates at Google Cloud                                                                                         |
-| [gcp-create](roles/gcp-create)                         | Creates a Kubernetes cluster at Google Cloud                                                                          |
-| [gcp-destroy](roles/gcp-destroy)                       | Destroys a Kubernetes cluster at Google Cloud                                                                         |
-| [group-k8s](roles/group-k8s)                           | Dynamically creates groups called `k8s-masters` and `k8s-workers` from vars defined `master_nodes` and `worker_nodes` |
-| [helm-chart](roles/helm-chart)                         | Deploys a helm chart to a k8s cluster                                                                                 |
-| [systemd-docker-service](roles/systemd-docker-service) | Renders a systemd unit file that runs an application within a docker container                                        |
+| Role Name                                                              | Description                                                                                                           |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| [docker-over-tcp](roles/docker-over-tcp)                               | Exposes the Docker socket via TCP                                                                                     |
+| [gcp-auth](roles/gcp-auth)                                             | Authenticates at Google Cloud                                                                                         |
+| [gcp-create](roles/gcp-create)                                         | Creates a Kubernetes cluster at Google Cloud                                                                          |
+| [gcp-destroy](roles/gcp-destroy)                                       | Destroys a Kubernetes cluster at Google Cloud                                                                         |
+| [group-k8s](roles/group-k8s)                                           | Dynamically creates groups called `k8s-masters` and `k8s-workers` from vars defined `master_nodes` and `worker_nodes` |
+| [helm-chart](roles/helm-chart)                                         | Deploys a helm chart to a k8s cluster                                                                                 |
+| [systemd-docker-service](roles/systemd-docker-service)                 | Renders a systemd unit file that runs an application within a docker container                                        |
+| [systemd-docker-service-cleanup](roles/systemd-docker-service-cleanup) | Stops a systemd unit and deletes its service definition                                                               |
 
 ## Dynamic Inventories
 

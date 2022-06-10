@@ -1,0 +1,10 @@
+---
+- name: ensure service is started
+  systemd:
+    name: "{{ systemd_service_name }}"
+    state: stopped
+    enabled: no
+
+- name: remove service {{ systemd_service_name }}
+  file:
+    path: /etc/systemd/system/{{ systemd_service_name }}.service

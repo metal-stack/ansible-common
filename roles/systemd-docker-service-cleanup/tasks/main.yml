@@ -1,5 +1,5 @@
 ---
-- name: ensure service is started
+- name: ensure service is stopped
   systemd:
     name: "{{ systemd_service_name }}"
     state: stopped

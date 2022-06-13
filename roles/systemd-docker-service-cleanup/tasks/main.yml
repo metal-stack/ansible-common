@@ -9,7 +9,7 @@
     name: "{{ systemd_service_name }}"
     state: stopped
     enabled: no
-  when: systemd_service .stat.exists
+  when: systemd_service.stat.exists
 
 - name: remove service {{ systemd_service_name }}
   file:

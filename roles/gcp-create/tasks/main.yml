@@ -10,7 +10,7 @@
   when: gcp_k8s_version is not defined
 
 - name: Create GCP Cluster
-  command: gcloud beta container --project {{ gcp_project }} clusters create {{ gcp_cluster_name }}
+  command: gcloud container --project {{ gcp_project }} clusters create {{ gcp_cluster_name }}
     --zone {{ gcp_location }}
     --no-enable-basic-auth
     --cluster-version {{ gcp_k8s_version }}

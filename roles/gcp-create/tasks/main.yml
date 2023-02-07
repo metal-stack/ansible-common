@@ -9,6 +9,9 @@
     gcp_k8s_version: "{{ (gcp_k8s_versions.stdout | from_json).get('validMasterVersions')[0] }}"
   when: gcp_k8s_version is not defined
 
+# before creating the cluster, a default network is necessary. this can be created with:
+# gcloud compute networks create default --project={{ gcp_project } --description=Default --subnet-mode=auto --mtu=1460 --bgp-routing-mode=regional
+
 - name: Create GCP Cluster
   command: gcloud container --project {{ gcp_project }} clusters create {{ gcp_cluster_name }}
     --zone {{ gcp_location }}

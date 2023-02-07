@@ -25,7 +25,6 @@
     --min-nodes {{ gcp_autoscaling_min_nodes | default(gcp_initial_node_count) }}
     --max-nodes {{ gcp_autoscaling_max_nodes | default(gcp_initial_node_count * 2) }}
     --enable-ip-alias
-    --network "projects/{{ gcp_project }}/global/networks/default"
     --default-max-pods-per-node "110"
     --addons HorizontalPodAutoscaling,HttpLoadBalancing
     --enable-autoupgrade

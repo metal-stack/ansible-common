@@ -1,6 +1,6 @@
 ---
 - name: Destroy GCP Cluster
-  command: gcloud beta container --project {{ gcp_project }} clusters delete {{ gcp_cluster_name }}
+  command: gcloud container --project {{ gcp_project }} clusters delete {{ gcp_cluster_name }}
     --quiet
     --zone {{ gcp_location }}
     --account {{ gcp_service_account }}

@@ -9,8 +9,11 @@
     gcp_k8s_version: "{{ (gcp_k8s_versions.stdout | from_json).get('validMasterVersions')[0] }}"
   when: gcp_k8s_version is not defined
 
+# before creating the cluster, a default network is necessary. this can be created with:
+# gcloud compute networks create default --project={{ gcp_project } --description=Default --subnet-mode=auto --mtu=1460 --bgp-routing-mode=regional
+
 - name: Create GCP Cluster
-  command: gcloud beta container --project {{ gcp_project }} clusters create {{ gcp_cluster_name }}
+  command: gcloud container --project {{ gcp_project }} clusters create {{ gcp_cluster_name }}
     --zone {{ gcp_location }}
     --no-enable-basic-auth
     --cluster-version {{ gcp_k8s_version }}
@@ -25,7 +28,6 @@
     --min-nodes {{ gcp_autoscaling_min_nodes | default(gcp_initial_node_count) }}
     --max-nodes {{ gcp_autoscaling_max_nodes | default(gcp_initial_node_count * 2) }}
     --enable-ip-alias
-    --network "projects/{{ gcp_project }}/global/networks/default"
     --default-max-pods-per-node "110"
     --addons HorizontalPodAutoscaling,HttpLoadBalancing
     --enable-autoupgrade

@@ -6,7 +6,7 @@ You can use the [gcp-auth](roles/gcp-auth) to authenticate before creating the c
 
 ## Requirements
 
-- [gcloud CLI](https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu?hl=d
+- [gcloud CLI](https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu?hl=de)
 
 ## Variables
 

@@ -18,7 +18,7 @@
     --no-enable-basic-auth
     --cluster-version {{ gcp_k8s_version }}
     --machine-type {{ gcp_machine_type }}
-    --image-type COS
+    --image-type {{ gcp_node_image_type }}
     --disk-type "pd-standard"
     --disk-size {{ gcp_disk_size_gb }}
     --metadata disable-legacy-endpoints=true

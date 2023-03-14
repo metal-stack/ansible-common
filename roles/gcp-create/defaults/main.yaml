@@ -1,2 +1,10 @@
 ---
 gcp_node_image_type: COS_CONTAINERD
+gcp_maintenance_window:
+  start: "13:00:00"
+  end: "17:00:00"
+  weekdays:
+    - MO
+    - TU
+    - WE
+    - TH

@@ -44,6 +44,7 @@
     {% if helm_chart_version is defined and helm_chart_version %}--version {{ helm_chart_version }}{% endif %}
     {% if helm_wait is defined and helm_wait %}--wait{% endif %}
     {% if helm_timeout is defined and helm_timeout %}--timeout {{ helm_timeout }}{% endif %}
+    {% if helm_skip_crds is defined and helm_skip_crds %}--skip-crds {% endif %}
     {{ helm_release_name }}
     {{ helm_chart }}"
   args:

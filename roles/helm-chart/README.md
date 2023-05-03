@@ -9,7 +9,7 @@ Installs a helm chart.
 ## Variables
 
 | Name                          | Mandatory | Description                                                                                            |
-| ----------------------------- | --------- | ------------------------------------------------------------------------------------------------------ |
+|-------------------------------|-----------|--------------------------------------------------------------------------------------------------------|
 | helm_chart                    | yes       | The reference to the helm chart                                                                        |
 | helm_target_namespace         | yes       | The target namespace to deploy the helm chart to                                                       |
 | helm_release_name             | yes       | The release name of the helm deployment                                                                |
@@ -21,6 +21,7 @@ Installs a helm chart.
 | helm_repo                     |           | Adds the chart repository URL                                                                          |
 | helm_wait                     |           | Adds the `--wait` option                                                                               |
 | helm_timeout                  |           | Waits the given period of time before giving up when used in conjunction with `--wait`                 |
+| helm_skip_crds                |           | Skips the CRD installation step                                                                        | 
 | helm_bin                      |           | Alternative path to the helm binary                                                                    |
 | helm_chart_remote_temp        |           | The path on the target host where the values file is templated to                                      |
 | helm_chart_custom_folder      |           | The path to a local helm chart                                                                         |

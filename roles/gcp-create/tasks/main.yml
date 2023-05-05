@@ -14,7 +14,11 @@
 
 - name: Create GCP Cluster
   command: gcloud container --project {{ gcp_project }} clusters create {{ gcp_cluster_name }}
+    {% if gcp_location is defined %}
     --zone {{ gcp_location }}
+    {% else %}
+    --region {{ gcp_region }}
+    {% endif %}
     --no-enable-basic-auth
     --cluster-version {{ gcp_k8s_version }}
     --machine-type {{ gcp_machine_type }}
@@ -33,6 +37,11 @@
     --enable-autoupgrade
     --enable-autorepair
     --account {{ gcp_service_account }}
+    {% if gcp_maintenance_window %}
+    --maintenance-window-start "2023-03-11T{{ gcp_maintenance_window.start }}Z"
+    --maintenance-window-end "2023-03-11T{{ gcp_maintenance_window.end }}Z"
+    --maintenance-window-recurrence "FREQ=WEEKLY;BYDAY={{ gcp_maintenance_window.weekdays | join(',') }}"
+    {% endif %}
   register: result
   changed_when:
     - "'message=Already exists' not in result.stderr"

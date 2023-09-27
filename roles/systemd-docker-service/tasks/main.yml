@@ -14,6 +14,8 @@
 
 - name: pre-pull docker image
   command: docker pull {{ systemd_docker_image_name }}:{{ systemd_docker_image_tag }}
+  register: pullimage
+  changed_when: "'Downloaded newer image' in pullimage.stdout" 
 
 - name: start service {{ systemd_service_name }}
   systemd:

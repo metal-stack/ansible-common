@@ -31,12 +31,6 @@ This repository contains shared roles, modules and plugins for metal-stack.
 | [systemd-docker-service](roles/systemd-docker-service)                 | Renders a systemd unit file that runs an application within a docker container                                        |
 | [systemd-docker-service-cleanup](roles/systemd-docker-service-cleanup) | Stops a systemd unit and deletes its service definition                                                               |
 
-## Dynamic Inventories
-
-| Inventory Name               | Description                                          |
-| ---------------------------- | ---------------------------------------------------- |
-| [Vagrant](inventory/vagrant) | Builds a dynamic inventory from Vagrant's ssh-config |
-
 ## Filter Plugins
 
 | Plugin Name               | Requirements                                                               | Description                                                           |

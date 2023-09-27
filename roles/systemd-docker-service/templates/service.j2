@@ -1,9 +1,9 @@
 [Unit]
 Description={{ systemd_service_name }} {{ systemd_docker_image_tag }}
 After={{ systemd_service_after }}
-{%- if systemd_service_bindsto %}
+{% if systemd_service_bindsto %}
 BindsTo={{ systemd_service_bindsto }}
-{%- endif %}
+{% endif %}
 Wants={{ systemd_service_wants }}
 
 [Service]

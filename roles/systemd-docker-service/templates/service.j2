@@ -7,8 +7,8 @@ BindsTo={{ systemd_service_bindsto }}
 Wants={{ systemd_service_wants }}
 
 [Service]
-ExecStartPre=-/usr/bin/docker rm --force --volumes %n
-ExecStart=/usr/bin/docker run --name=%n \
+ExecStartPre=-/usr/bin/docker --host "{{ systemd_docker_host }}" rm --force --volumes %n
+ExecStart=/usr/bin/docker --host "{{ systemd_docker_host }}" run --name=%n \
 {% for key, value in systemd_service_environment.items() %}
     --env "{{ key }}={{ value }}" \
 {% endfor %}
@@ -44,8 +44,8 @@ ExecStart=/usr/bin/docker run --name=%n \
 {% endfor %}
     {{ systemd_docker_image_name }}:{{ systemd_docker_image_tag }} {% if systemd_docker_command %}{{ systemd_docker_command | join(" ") if systemd_docker_command is iterable else systemd_docker_command }}{% endif %}
 
-ExecStop=/usr/bin/docker stop %n
-ExecReload=/usr/bin/docker kill --signal=HUP %n
+ExecStop=/usr/bin/docker --host "{{ systemd_docker_host }}" stop %n
+ExecReload=/usr/bin/docker --host "{{ systemd_docker_host }}" kill --signal=HUP %n
 Restart=always
 RestartSec={{ systemd_service_restart_sec }}
 StartLimitInterval=0

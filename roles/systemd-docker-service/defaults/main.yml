@@ -2,6 +2,7 @@
 systemd_start: yes
 systemd_external_config_changed: no
 systemd_service_environment: {}
+systemd_docker_host: unix://var/run/docker.sock
 systemd_docker_network:
 systemd_docker_command:
 systemd_docker_dns: []

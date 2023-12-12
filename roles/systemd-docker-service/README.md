@@ -5,10 +5,11 @@ Renders a systemd unit file that runs an application within a docker container.
 ## Variables
 
 | Name                              | Mandatory | Description                                                                           |
-| --------------------------------- | --------- | ------------------------------------------------------------------------------------- |
+| --------------------------------- | --------- |---------------------------------------------------------------------------------------|
 | systemd_service_name              | yes       | The name of the systemd service                                                       |
 | systemd_docker_image_name         | yes       | The name of the docker image to run                                                   |
 | systemd_docker_image_tag          | yes       | The tag of the docker image to run                                                    |
+| systemd_docker_host               |           | The address or path used to connect to the Docker API                                 |
 | systemd_service_environment       |           | Environment variables to pass through to the docker container                         |
 | systemd_docker_network            |           | The docker network to use                                                             |
 | systemd_docker_command            |           | The command to tun the docker container with                                          |

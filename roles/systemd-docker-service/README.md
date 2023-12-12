@@ -5,7 +5,7 @@ Renders a systemd unit file that runs an application within a docker container.
 ## Variables
 
 | Name                              | Mandatory | Description                                                                           |
-| --------------------------------- | --------- |---------------------------------------------------------------------------------------|
+| --------------------------------- | --------- | ------------------------------------------------------------------------------------- |
 | systemd_service_name              | yes       | The name of the systemd service                                                       |
 | systemd_docker_image_name         | yes       | The name of the docker image to run                                                   |
 | systemd_docker_image_tag          | yes       | The tag of the docker image to run                                                    |

@@ -3,19 +3,19 @@
   template:
     src: service.j2
     dest: /etc/systemd/system/{{ systemd_service_name }}.service
-  register: result
+  register: service_unit_result
 
 - name: reload daemon to have the unit file known by systemd
   systemd:
     name: "{{ systemd_service_name }}"
     daemon_reload: yes
   when:
-    - result is changed
+    - service_unit_result is changed
 
 - name: pre-pull docker image
   command: docker pull {{ systemd_docker_image_name }}:{{ systemd_docker_image_tag }}
-  register: pullimage
-  changed_when: "'Downloaded newer image' in pullimage.stdout" 
+  register: pull_image_result
+  changed_when: "'Downloaded newer image' in pull_image_result.stdout"
 
 - name: start service {{ systemd_service_name }}
   systemd:
@@ -23,10 +23,10 @@
     state: restarted
     enabled: yes
   when:
-    - result is changed or systemd_external_config_changed | bool
+    - service_unit_result is changed or pull_image_result is changed or systemd_external_config_changed | bool
     - systemd_start | bool
-  register: start_result
-  until: start_result is success
+  register: service_restart_result
+  until: service_restart_result is success
   retries: 2
   delay: 10
 

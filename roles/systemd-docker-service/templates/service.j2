@@ -36,6 +36,9 @@ ExecStart=/usr/bin/docker run --name=%n \
 {% if systemd_docker_memory is defined  %}
     --memory {{ systemd_docker_memory }} \
 {% endif %}
+{% if systemd_docker_log_driver is defined %}
+    --log-driver {{ systemd_docker_log_driver }} \
+{% endif %}
 {% if systemd_docker_network %}
     --network {{ systemd_docker_network }} \
 {% endif %}

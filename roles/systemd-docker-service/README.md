@@ -21,6 +21,7 @@ Renders a systemd unit file that runs an application within a docker container.
 | systemd_docker_cpu_period         |           | The CPU time period for the docker container to use                                   |
 | systemd_docker_cpu_quota          |           | The number of microseconds per period for the docker container to use                 |
 | systemd_docker_memory             |           | The maximum amount of memory for the docker container to use                          |
+| systemd_docker_log_driver         |           | The log driver to use for the container instead of the system default                 |
 | systemd_service_restart_sec       |           | The number of seconds to wait before restarting the systemd service                   |
 | systemd_service_timeout_start_sec |           | The number of seconds to wait before starting the systemd service                     |
 | systemd_service_timeout_stop_sec  |           | The number of seconds to wait for the systemd service to stop                         |
@@ -32,7 +33,7 @@ Renders a systemd unit file that runs an application within a docker container.
 
 ## Examples
 
-```
+```yaml
 - name: deploy metal-core service
   include_role:
     name: systemd-docker-service

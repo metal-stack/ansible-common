@@ -14,9 +14,9 @@ This repository contains shared roles, modules and plugins for metal-stack.
 
 ## Modules
 
-| Module Name                               | Description                                                  | Requirements      |
-| ----------------------------------------- | ------------------------------------------------------------ | ----------------- |
-| [setup_yaml](library/setup_yaml.py)       | Setup plugin that resolves variables from a remote YAML file |                   |
+| Module Name                         | Description                                                  | Requirements |
+| ----------------------------------- | ------------------------------------------------------------ | ------------ |
+| [setup_yaml](library/setup_yaml.py) | Setup plugin that resolves variables from a remote YAML file |              |
 
 ## Roles
 
@@ -38,6 +38,7 @@ This repository contains shared roles, modules and plugins for metal-stack.
 | humanfriendly             | [humanfriendly](https://github.com/xolox/python-humanfriendly)             | Converts sizes into human-friendly formats                            |
 | transpile_ignition_config | [ct](https://github.com/coreos/container-linux-config-transpiler/releases) | Transforming a human-friendly Container Linux Config into a JSON file |
 | metal_lb_config           |                                                                            | Generates the config map for metal-lb                                 |
+| shoot_admin_kubeconfig    |                                                                            | Generates a kubeconfig for a namespace and shoot name.                |
 
 ## Usage
 

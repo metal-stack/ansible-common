@@ -17,5 +17,5 @@ systemd_service_bindsto:
 systemd_service_wants: docker.service
 systemd_docker_image_tag: latest
 
-systemd_docker_log_opt_max_file: "{{ '2' if systemd_docker_log_driver is not defined or systemd_docker_log_driver == 'json-file' else None }}"
-systemd_docker_log_opt_max_size: "{{ '10m' if systemd_docker_log_driver is not defined or systemd_docker_log_driver == 'json-file' else None }}"
+systemd_docker_log_opt_max_file: 2
+systemd_docker_log_opt_max_size: 10m

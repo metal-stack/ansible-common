@@ -39,14 +39,6 @@ ExecStart=/usr/bin/docker run --name=%n \
 {% if systemd_docker_log_driver is defined %}
     --log-driver {{ systemd_docker_log_driver }} \
 {% endif %}
-{% if systemd_docker_log_driver is not defined or systemd_docker_log_driver == "json-file" %}
-{% if systemd_docker_log_opt_max_file is not defined %}
-{% set systemd_docker_log_opt_max_file "2" %}
-{% endif %}
-{% if systemd_docker_log_opt_max_size is not defined %}
-{% set systemd_docker_log_opt_max_size "10m" %}
-{% endif %}
-{% endif %}
 {% if systemd_docker_log_opt_max_file is defined %}
     --log-opt max-file={{ systemd_docker_log_opt_max_file }} \
 {% endif %}

@@ -39,6 +39,10 @@ ExecStart=/usr/bin/docker run --name=%n \
 {% if systemd_docker_log_driver is defined %}
     --log-driver {{ systemd_docker_log_driver }} \
 {% endif %}
+{% if systemd_docker_log_driver is defined and systemd_docker_log_driver in ['local', 'json-file'] %}
+    --log-opt max-file={{ systemd_docker_log_opt_max_file }} \
+    --log-opt max-size={{ systemd_docker_log_opt_max_size }} \
+{% endif %}
 {% if systemd_docker_network %}
     --network {{ systemd_docker_network }} \
 {% endif %}

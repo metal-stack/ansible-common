@@ -16,3 +16,6 @@ systemd_service_after: docker.service
 systemd_service_bindsto:
 systemd_service_wants: docker.service
 systemd_docker_image_tag: latest
+
+systemd_docker_log_opt_max_file: 5
+systemd_docker_log_opt_max_size: 4m

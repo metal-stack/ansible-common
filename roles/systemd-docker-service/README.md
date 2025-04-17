@@ -29,6 +29,7 @@ Renders a systemd unit file that runs an application within a docker container.
 | systemd_service_timeout_stop_sec  |           | The number of seconds to wait for the systemd service to stop                         |
 | systemd_service_after             |           | The systemd unit after dependencies                                                   |
 | systemd_service_bindsto           |           | The systemd unit bindsto dependencies                                                 |
+| systemd_service_wantedby          |           | The systemd install wantedby dependencies                                             |
 | systemd_service_wants             |           | The systemd unit wants dependencies                                                   |
 | systemd_start                     |           | Starts the systemd service after rendering the template                               |
 | systemd_external_config_changed   |           | Indicates that the systemd should be restarted because external configuration changed |

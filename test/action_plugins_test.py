@@ -1,14 +1,15 @@
 import sys
 import unittest
-from ansible.template import Templar
-from ansible.parsing.dataloader import DataLoader
+from unittest.mock import MagicMock, patch
 
 from test import ACTION_PLUGINS_PATH
 from mock import patch, MagicMock, call
 from ansible.playbook.task import Task
+from ansible.template import Templar
 
 sys.path.insert(0, ACTION_PLUGINS_PATH)
 from setup_yaml import ActionModule
+
 
 SAMPLE_VECTOR_01 = """
 docker-images:
@@ -55,32 +56,26 @@ def open_url_mock(return_value, return_code=200):
 
 
 class SetupYAMLTest(unittest.TestCase):
+    task = MagicMock(Task)
+    play_context = MagicMock()
+    play_context.check_mode = False
+    connection = MagicMock()
+    templar = Templar(loader=None)
+
     def setUp(self):
-        self.task = MagicMock(Task)
-        self.play_context = MagicMock()
-        self.play_context.check_mode = False
-        self.connection = MagicMock()
-        self.loader = DataLoader()
-        self.templar = Templar(loader=self.loader)
+        self.task.action = 'setup_yaml'
+        self.task.async_val = False
 
         self.maxDiff = None
 
     def tearDown(self):
-        self.task = None
-        self.play_context = None
-        self.connection = None
-
-    def initModule(self, args):
-        self.task.action = "setup_yaml"
-        self.task.async_val = False
-        self.task.args = args
-        return ActionModule(self.task, self.connection, self.play_context, loader=self.loader, templar=self.templar,
-                            shared_loader_obj=None)
+        pass
 
     @patch("setup_yaml.open_url")
     def test_resolves(self, mock):
         mock.return_value = open_url_mock(SAMPLE_VECTOR_01)
-        module_args = dict(
+
+        self.task.args = dict(
             files=[
                 dict(
                     url="https://raw.githubusercontent.com/metal-stack/releases/master/release.yaml",
@@ -88,17 +83,17 @@ class SetupYAMLTest(unittest.TestCase):
                 ),
             ],
         )
-        task_vars = dict()
-        module = self.initModule(args=module_args)
 
-        actual = module.run(tmp=None, task_vars=task_vars)
+        plugin = ActionModule(self.task, self.connection, self.play_context, loader=None, templar=self.templar, shared_loader_obj=None)
+
+        actual = plugin.run(task_vars=None)
 
         mock.assert_called()
         mock.assert_called_with('https://raw.githubusercontent.com/metal-stack/releases/master/release.yaml')
 
         expected = dict({
             'metal_api_image_tag': 'v0.7.8',
-            module.ALREADY_RESOLVED_MARKER: True,
+            plugin.ALREADY_RESOLVED_MARKER: True,
         })
 
         self.assertIn("ansible_facts", actual)
@@ -110,7 +105,8 @@ class SetupYAMLTest(unittest.TestCase):
             open_url_mock(SAMPLE_VECTOR_02),
             open_url_mock(SAMPLE_VECTOR_01)
         ]
-        module_args = dict(
+
+        self.task.args = dict(
             files=[
                 dict(
                     url="https://raw.githubusercontent.com/metal-stack/releases/master/nested.yaml",
@@ -122,10 +118,10 @@ class SetupYAMLTest(unittest.TestCase):
                 ),
             ],
         )
-        task_vars = dict()
-        module = self.initModule(args=module_args)
 
-        actual = module.run(tmp=None, task_vars=task_vars)
+        plugin = ActionModule(self.task, self.connection, self.play_context, loader=None, templar=self.templar, shared_loader_obj=None)
+
+        actual = plugin.run(task_vars=None)
 
         mock.assert_called()
         expected_calls = [
@@ -137,7 +133,7 @@ class SetupYAMLTest(unittest.TestCase):
         expected = dict({
             'masterdata_api_image_tag': 'v0.7.1',
             'metal_api_image_tag': 'v0.7.8',
-            module.ALREADY_RESOLVED_MARKER: True,
+            plugin.ALREADY_RESOLVED_MARKER: True,
         })
 
         self.assertIn("ansible_facts", actual)
@@ -150,7 +146,8 @@ class SetupYAMLTest(unittest.TestCase):
             open_url_mock(SAMPLE_VECTOR_02),
             open_url_mock(SAMPLE_VECTOR_01)
         ]
-        module_args = dict(
+
+        self.task.args = dict(
             files=[
                 dict(
                     url="https://raw.githubusercontent.com/metal-stack/releases/master/doubly_nested.yaml",
@@ -173,10 +170,10 @@ class SetupYAMLTest(unittest.TestCase):
                 ),
             ],
         )
-        task_vars = dict()
-        module = self.initModule(args=module_args)
 
-        actual = module.run(tmp=None, task_vars=task_vars)
+        plugin = ActionModule(self.task, self.connection, self.play_context, loader=None, templar=self.templar, shared_loader_obj=None)
+
+        actual = plugin.run(task_vars=None)
 
         mock.assert_called()
         expected_calls = [
@@ -190,7 +187,7 @@ class SetupYAMLTest(unittest.TestCase):
             'metal_console_image_tag': 'v0.4.2',
             'masterdata_api_image_tag': 'v0.7.1',
             'metal_api_image_tag': 'v0.7.8',
-            module.ALREADY_RESOLVED_MARKER: True,
+            plugin.ALREADY_RESOLVED_MARKER: True,
         })
 
         self.assertIn("ansible_facts", actual)
@@ -202,14 +199,7 @@ class SetupYAMLTest(unittest.TestCase):
             open_url_mock(SAMPLE_VECTOR_02),
             open_url_mock(SAMPLE_VECTOR_01)
         ]
-        module_args = dict(
-            files=[
-                dict(
-                    url="https://raw.githubusercontent.com/metal-stack/releases/master/nested.yaml",
-                    meta_var="nested_var"
-                ),
-            ],
-        )
+
         task_vars = dict(
             nested_var=dict(
                 mapping=dict(masterdata_api_image_tag="docker-images.metal-stack.control-plane.masterdata-api.tag"),
@@ -224,9 +214,19 @@ class SetupYAMLTest(unittest.TestCase):
                 ),
             ),
         )
-        module = self.initModule(args=module_args)
 
-        actual = module.run(tmp=None, task_vars=task_vars)
+        self.task.args = dict(
+            files=[
+                dict(
+                    url="https://raw.githubusercontent.com/metal-stack/releases/master/nested.yaml",
+                    meta_var="nested_var"
+                ),
+            ],
+        )
+
+        plugin = ActionModule(self.task, self.connection, self.play_context, loader=None, templar=self.templar, shared_loader_obj=None)
+
+        actual = plugin.run(task_vars=task_vars)
 
         mock.assert_called()
         expected_calls = [
@@ -238,7 +238,7 @@ class SetupYAMLTest(unittest.TestCase):
         expected = dict({
             'masterdata_api_image_tag': 'v0.7.1',
             'metal_api_image_tag': 'v0.7.8',
-            module.ALREADY_RESOLVED_MARKER: True,
+            plugin.ALREADY_RESOLVED_MARKER: True,
         })
 
         self.assertIn("ansible_facts", actual)
@@ -250,7 +250,8 @@ class SetupYAMLTest(unittest.TestCase):
             open_url_mock(SAMPLE_VECTOR_02),
             open_url_mock(SAMPLE_VECTOR_01)
         ]
-        module_args = dict(
+
+        self.task.args = dict(
             files=[
                 dict(
                     url="https://raw.githubusercontent.com/metal-stack/releases/master/nested.yaml",
@@ -263,10 +264,10 @@ class SetupYAMLTest(unittest.TestCase):
                 ),
             ],
         )
-        task_vars = dict()
-        module = self.initModule(args=module_args)
 
-        actual = module.run(tmp=None, task_vars=task_vars)
+        plugin = ActionModule(self.task, self.connection, self.play_context, loader=None, templar=self.templar, shared_loader_obj=None)
+
+        actual = plugin.run(task_vars=None)
 
         mock.assert_called()
         expected_calls = [
@@ -276,7 +277,7 @@ class SetupYAMLTest(unittest.TestCase):
 
         expected = dict({
             'masterdata_api_image_tag': 'v0.7.1',
-            module.ALREADY_RESOLVED_MARKER: True,
+            plugin.ALREADY_RESOLVED_MARKER: True,
         })
 
         self.assertIn("ansible_facts", actual)
@@ -285,7 +286,12 @@ class SetupYAMLTest(unittest.TestCase):
     @patch("setup_yaml.open_url")
     def test_resolves_not_overriding_existing_vars(self, mock):
         mock.return_value = open_url_mock(SAMPLE_VECTOR_01)
-        module_args = dict(
+
+        task_vars = dict(
+            metal_api_image_tag='v0.0.1',
+        )
+
+        self.task.args = dict(
             files=[
                 dict(
                     url="https://raw.githubusercontent.com/metal-stack/releases/master/release.yaml",
@@ -293,18 +299,16 @@ class SetupYAMLTest(unittest.TestCase):
                 ),
             ],
         )
-        task_vars = dict(
-            metal_api_image_tag='v0.0.1',
-        )
-        module = self.initModule(args=module_args)
 
-        actual = module.run(tmp=None, task_vars=task_vars)
+        plugin = ActionModule(self.task, self.connection, self.play_context, loader=None, templar=self.templar, shared_loader_obj=None)
+
+        actual = plugin.run(task_vars=task_vars)
 
         mock.assert_called()
         mock.assert_called_with('https://raw.githubusercontent.com/metal-stack/releases/master/release.yaml')
 
         expected = dict({
-            module.ALREADY_RESOLVED_MARKER: True,
+            plugin.ALREADY_RESOLVED_MARKER: True,
         })
 
         self.assertIn("ansible_facts", actual)
@@ -313,7 +317,8 @@ class SetupYAMLTest(unittest.TestCase):
     @patch("setup_yaml.open_url")
     def test_resolves_with_replace(self, mock):
         mock.return_value = open_url_mock(SAMPLE_VECTOR_01)
-        module_args = dict(
+
+        self.task.args = dict(
             files=[
                 dict(
                     url="https://raw.githubusercontent.com/metal-stack/releases/master/release.yaml",
@@ -322,17 +327,17 @@ class SetupYAMLTest(unittest.TestCase):
                 ),
             ],
         )
-        task_vars = dict()
-        module = self.initModule(args=module_args)
 
-        actual = module.run(tmp=None, task_vars=task_vars)
+        plugin = ActionModule(self.task, self.connection, self.play_context, loader=None, templar=self.templar, shared_loader_obj=None)
+
+        actual = plugin.run(task_vars=None)
 
         mock.assert_called()
         mock.assert_called_with('https://raw.githubusercontent.com/metal-stack/releases/master/release.yaml')
 
         expected = dict({
             "metal_api_image_name": "somewhere.io/metal-stack/metal-api",
-            module.ALREADY_RESOLVED_MARKER: True,
+            plugin.ALREADY_RESOLVED_MARKER: True,
         })
 
         self.assertIn("ansible_facts", actual)

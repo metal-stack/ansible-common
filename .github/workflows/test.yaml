@@ -6,10 +6,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: metalstack/metal-deployment-base:v0.0.5
+    container: metalstack/metal-deployment-base:latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Test
-      run: |
-        pip install nose coverage mock
-        nosetests
+      - uses: actions/checkout@v4
+      - name: Test
+        run: |
+          make test

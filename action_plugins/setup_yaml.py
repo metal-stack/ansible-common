@@ -150,8 +150,8 @@ class ActionModule(ActionBase):
                 value = self.resolve_path(f, path)
             except KeyError as e:
                 display.warning(
-                    """error reading variable from file, variable %s not found in path: %s 
-                    
+                    """error reading variable from file, variable %s not found in path: %s
+
                     (is the mapping appropriate for %s?)""" % (
                         to_native(e), path, url))
                 continue

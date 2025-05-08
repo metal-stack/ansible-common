@@ -3,18 +3,16 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import json
-from kubernetes import client, config
+from kubernetes import config, dynamic
 from kubernetes.client.rest import ApiException
 from ansible.module_utils.basic import AnsibleModule
 
 
 def run_module():
     module_args = dict(
-        name=dict(type='str', required=True),
-        namespace=dict(type='str', required=True),
+        api_version=dict(type='str', required=False),
+        kind=dict(type='str', required=False),
         kubeconfig=dict(type='raw', no_log=True, required=False),
-        body=dict(type='dict', required=True)
     )
 
     result = dict(
@@ -39,18 +37,37 @@ def run_module():
     else:
         module.fail_json(msg="Error while reading kubeconfig parameter - a string or dict expected, but got %s instead" % type(kubeconfig), **result)
 
-    api_instance = client.CoreV1Api(api_client)
+    dynamic_client = dynamic.DynamicClient(client=api_client)
 
-    name = module.params.get('name')
-    namespace = module.params.get('namespace')
-    body = module.params.get('body')
+    api_version = module.params.get('api_version', None)
+    kind = module.params.get('kind', None)
 
     try:
-        api_response = api_instance.patch_namespaced_service_status(name, namespace, body)
-        result['changed'] = True
-        result['result'] = json.dumps(api_client.sanitize_for_serialization(api_response), sort_keys=True, indent=4)
+        api_response = dynamic_client.resources.search(api_version=api_version, kind=kind)
     except ApiException as e:
-        module.fail_json(msg="Exception when calling CoreV1Api->patch_namespaced_service_status: %s\n" % e, **result)
+        module.fail_json(msg="Exception when searching discovery api: %s\n" % e, **result)
+
+    resources = []
+
+    for resource in api_response:
+        subresources = []
+        if resource.subresources:
+            for name, _ in resource.subresources.items():
+                subresources.append(name)
+
+        resources.append(dict(
+            api_version=resource.api_version,
+            kind=resource.kind,
+            group=resource.group,
+            name=resource.name,
+            singular_name=resource.singular_name,
+            namespaced=resource.namespaced,
+            short_names=resource.short_names,
+            verbs=resource.verbs,
+            subresources=subresources,
+        ))
+
+    result["result"] = resources
 
     module.exit_json(**result)
 

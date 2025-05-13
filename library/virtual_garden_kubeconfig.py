@@ -15,7 +15,7 @@ DOCUMENTATION = '''
 ---
 module: virtual_garden_kubeconfig
 short_description: Retrieves a kubeconfig for accessing the virtual garden
-version_added: "2.10"
+version_added: "2.15"
 description:
     - This relies on the virtual garden access kubeconfig being deployed through a managed resource as described in the Gardener docs.
     - Deploying a virtual garden like this can be achieved through the gardener operator.
@@ -58,5 +58,5 @@ EXAMPLES = '''
   virtual_garden_kubeconfig:
 
 # The expected module return will be:
-# {"ansible_facts": {"gardener_virtual_garden_kubeconfig": "<a-kubeconfig>"}}
+# {"ansible_facts": {"virtual_garden_kubeconfig": "<a-kubeconfig>"}}
 '''

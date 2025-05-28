@@ -1,6 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import tarfile
+
+from io import BytesIO
+from yaml import safe_load
+from urllib.parse import urlparse
+
 from traceback import format_exc
 from yaml import safe_load
 
@@ -9,12 +15,24 @@ from ansible.plugins.action import ActionBase
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.module_utils._text import to_native
 
+
+HAS_OPENCONTAINERS = True
+try:
+    from opencontainers.distribution.reggie import NewClient, WithReference, WithDigest, WithDefaultName, WithUsernamePassword # type: ignore[import]
+    import opencontainers.image.v1 as opencontainersv1 # type: ignore[import]
+except ImportError as ex:
+    HAS_OPENCONTAINERS = False
+
+
 try:
     from __main__ import display
 except ImportError:
     from ansible.utils.display import Display
 
     display = Display()
+
+
+RELEASE_VECTOR_MEDIA_TYPE = "application/vnd.metal-stack.release-vector.v1.tar+gzip"
 
 
 class ActionModule(ActionBase):
@@ -67,23 +85,24 @@ class ActionModule(ActionBase):
 
         for f in files:
             url = self._templar.template(f.get("url"))
+            oci_ref = self._templar.template(f.get("oci"))
             recursive = f.get("recursive", True)
             replace = f.get("replace", [])
             var = self._templar.template(f.get("meta_var"))
             mapping = f.get("mapping", task_vars.get(var, dict()).get("mapping"))
             nested = f.get("nested", task_vars.get(var, dict()).get("nested", list())) if recursive else list()
 
-            result = self.resolve(url, replace, mapping, nested, task_vars, result)
+            result = self.resolve(oci_ref, url, replace, mapping, nested, task_vars, result)
             if result.get("failed"):
                 return result
 
         return self._ensure_invocation(result)
 
-    def resolve(self, url, replace, mapping, nested, task_vars, result):
+    def resolve(self, oci_ref, url, replace, mapping, nested, task_vars, result):
         result["failed"] = True
 
-        if not url:
-            result["msg"] = "url is required"
+        if not url and not oci_ref:
+            result["msg"] = "url or oci ref is required"
         elif not mapping:
             result["msg"] = "mapping is required"
         else:
@@ -93,8 +112,24 @@ class ActionModule(ActionBase):
             return result
 
         try:
-            rsp = open_url(url)
-            f = safe_load(rsp.read())
+            if oci_ref:
+                if not HAS_OPENCONTAINERS:
+                    raise ImportError("opencontainers must be installed in order to resolve metal-stack oci release vectors")
+
+                # TODO: make registry scheme and tar member file configurable by the user
+                registry, namespace, version = self._parse_oci_ref(oci_ref)
+
+                blob = self._download_blob(
+                    registry,
+                    namespace,
+                    version,
+                    RELEASE_VECTOR_MEDIA_TYPE,
+                )
+
+                f = safe_load(self._extract_tar_gzip_file(blob.content, "release.yaml"))
+            else:
+                rsp = open_url(url)
+                f = safe_load(rsp.read())
         except Exception as e:
             result["failed"] = True
             result["msg"] = "error getting image vector from url: %s" % url
@@ -110,6 +145,7 @@ class ActionModule(ActionBase):
             ActionModule.replace_key_value(f, r.get("key"), r.get("old"), r.get("new"))
 
         for n in nested:
+            oci_path = self._templar.template(n.get("oci_path"))
             url_path = self._templar.template(n.get("url_path"))
             recursive = n.get("recursive", True)
             var = self._templar.template(n.get("meta_var"))
@@ -117,8 +153,8 @@ class ActionModule(ActionBase):
             next_nested = n.get("nested", task_vars.get(var, dict()).get("nested", list())) if recursive else list()
 
             result["failed"] = True
-            if not url_path:
-                result["msg"] = "url_path is required in nested"
+            if not url_path and not oci_path:
+                result["msg"] = "url_path or oci_path is required in nested"
             elif not nested_mapping:
                 result["msg"] = "mapping is required in nested"
             else:
@@ -128,7 +164,10 @@ class ActionModule(ActionBase):
                 return result
 
             try:
-                u = self.resolve_path(f, url_path)
+                if url_path:
+                    u = self.resolve_path(f, url_path)
+                if oci_path:
+                    o = self.resolve_path(f, oci_path)
             except KeyError as e:
                 result["failed"] = True
                 result["msg"] = "error resolving path in nested"
@@ -136,7 +175,7 @@ class ActionModule(ActionBase):
                 result["traceback"] = format_exc()
                 return result
 
-            result = self.resolve(u, replace, nested_mapping, next_nested, task_vars, result)
+            result = self.resolve(o, u, replace, nested_mapping, next_nested, task_vars, result)
             if result.get("failed"):
                 return result
 
@@ -150,8 +189,8 @@ class ActionModule(ActionBase):
                 value = self.resolve_path(f, path)
             except KeyError as e:
                 display.warning(
-                    """error reading variable from file, variable %s not found in path: %s 
-                    
+                    """error reading variable from file, variable %s not found in path: %s
+
                     (is the mapping appropriate for %s?)""" % (
                         to_native(e), path, url))
                 continue
@@ -182,3 +221,69 @@ class ActionModule(ActionBase):
         for k, v in data.items():
             if isinstance(v, dict):
                 ActionModule.replace_key_value(v, key, old, new)
+
+    @staticmethod
+    def _download_blob(self, address, default_name, reference, layer_media_type):
+        opts = [WithDefaultName(default_name)]
+        if self._registry_username and self._registry_password:
+            opts.append(WithUsernamePassword(username=self._registry_username, password=self._registry_password))
+
+        client = NewClient(address,
+            *opts
+        )
+
+        req = client.NewRequest(
+            "GET",
+            "/v2/<name>/manifests/<reference>",
+            WithReference(reference),
+        ).SetHeader("Accept", opencontainersv1.MediaTypeImageManifest)
+
+        try:
+            response = client.Do(req)
+            response.raise_for_status()
+        except Exception as e:
+            raise Exception("the download of the release vector raised an error: %s" % to_native(e))
+
+        manifest = response.json()
+
+        for layer in manifest["layers"]:
+            if layer["mediaType"] == layer_media_type:
+                target = layer
+                break
+
+        if not target:
+            raise Exception("no layer with media type %s found in oci release vector" % layer_media_type)
+
+        req = client.NewRequest(
+            "GET",
+            "/v2/<name>/blobs/<digest>",
+            WithDigest(target['digest']),
+        )
+
+        req.stream = True
+
+        try:
+            blob = client.Do(req)
+            blob.raise_for_status()
+        except Exception as e:
+            raise Exception("the download of the release vector layer raised an error: %s" % to_native(e))
+
+        return blob
+
+
+    @staticmethod
+    def _parse_oci_ref(full_ref, scheme='https'):
+        ref, *tag = full_ref.split(":", 1)
+        tag = tag[0] if tag else None
+        url = urlparse("%s://%s" % (scheme, ref))
+        return "%s://%s" % (scheme, url.netloc), url.path.removeprefix('/'), tag
+
+
+    @staticmethod
+    def _extract_tar_gzip_file(bytes, member):
+        with tarfile.open(fileobj=BytesIO(bytes), mode='r:gz') as tar:
+            with tar.extractfile(tar.getmember(member)) as f:
+                try:
+                    return f.read().decode('utf-8')
+                except Exception as e:
+                    raise Exception("error extracting tar member from oci layer: %s" % to_native(e))

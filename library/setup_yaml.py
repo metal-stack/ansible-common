@@ -17,10 +17,10 @@ module: setup_yaml
 short_description: Resolves variables from a remote YAML file
 version_added: "2.9"
 description:
-    - This module maps contents of a remote YAML file to ansible_facts according to a given variable mapping. 
+    - This module maps contents of a remote YAML file to ansible_facts according to a given variable mapping.
     - Within a YAML file, it is also possible to point to other YAML files, which will then be resolved recursively.
     - This module can pick up some variables "magically", which makes the module very versatile
-      but also causes some conventions that need to be followed when using this module. 
+      but also causes some conventions that need to be followed when using this module.
     - Please check out the examples of how to use it.
 options:
     files:
@@ -31,7 +31,7 @@ options:
         required: false
     smart:
         description:
-            - Will make this module skip in case it was already executed. 
+            - Will make this module skip in case it was already executed.
               Sets a marker into the vars to prevent repeated execution.
             - This parameter can be "magically" provided by defining the variable `setup_yaml_smart`
         required: false
@@ -49,8 +49,10 @@ options:
 author:
     - metal-stack
 notes:
-    - We typically use this module for dynamically providing docker image version variables to ansible roles. 
+    - We typically use this module for dynamically providing docker image version variables to ansible roles.
       In the metal-stack docs, we will also call the contents of the downloaded YAML file a release vector.
+    - In case files are referenced as OCI references, the module depends on the
+      [opencontainers]("https://github.com/vsoch/oci-python") library and the metal-stack release vector format.
 '''
 
 EXAMPLES = '''
@@ -63,7 +65,7 @@ EXAMPLES = '''
 #     name: hello-world
 #     tag: v0.2.0
 # ...
-# 
+#
 # Let's now define the following task:
 
 - name: gather release versions
@@ -73,19 +75,22 @@ EXAMPLES = '''
         mapping:
           hello_world_image_tag: "docker-images.hello-world.tag"
 
-# The expected module return will be:
-# {"ansible_facts": {"hello_world_image_tag": "v0.2.0"}}
-#
-# Remember that ansible_facts are automatically added to the host vars by ansible, such that they are immediately
-# available for further usage.
-#
-#
+# It is also possible to retrieve this file when it's wrapped inside a metal-stack release vector oci artifact:
+
+- name: gather release versions
+  setup_yaml:
+    files:
+      - oci: example.com:v1.0.0
+        mapping:
+          hello_world_image_tag: "docker-images.hello-world.tag"
+
 # It would also be possible to pickup the module parameters "magically". Let's create the following variables somewhere
 # in your playbook:
 #
 # ---
 # setup_yaml:
 #   - url: https://example.com/v1.0.0/example.yaml
+#     # oci: example.com:v1.0.0
 #     meta_var: example_release
 #
 # example_release:
@@ -112,6 +117,7 @@ EXAMPLES = '''
           hello_world_image_tag: "docker-images.hello-world.tag"
         nested:
           - url_path: "other-files.example-2.url"
+            # oci_path: "other-files.example-2.oci"
             mapping:
               hello_world_2_image_tag: "docker-images.hello-world-2.tag"
 #

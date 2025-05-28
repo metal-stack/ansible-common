@@ -75,6 +75,12 @@ EXAMPLES = '''
         mapping:
           hello_world_image_tag: "docker-images.hello-world.tag"
 
+# The expected module return will be:
+# {"ansible_facts": {"hello_world_image_tag": "v0.2.0"}}
+#
+# Remember that ansible_facts are automatically added to the host vars by ansible, such that they are immediately
+# available for further usage.
+#
 # It is also possible to retrieve this file when it's wrapped inside a metal-stack release vector oci artifact:
 
 - name: gather release versions

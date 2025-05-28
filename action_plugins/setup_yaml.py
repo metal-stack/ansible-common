@@ -163,6 +163,9 @@ class ActionModule(ActionBase):
             if result.get("failed"):
                 return result
 
+            u = None
+            o = None
+
             try:
                 if url_path:
                     u = self.resolve_path(f, url_path)

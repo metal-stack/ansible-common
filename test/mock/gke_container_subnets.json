@@ -1,0 +1,44 @@
+[
+  {
+    "ipCidrRange": "0.0.0.1/32",
+    "network": "projects/test-project/global/networks/default",
+    "subnetwork": "projects/test-project/regions/us-west1/subnetworks/default"
+  },
+  {
+    "ipCidrRange": "0.0.0.2/32",
+    "network": "projects/test-project/global/networks/default",
+    "subnetwork": "projects/test-project/regions/southamerica-east1/subnetworks/default"
+  },
+  {
+    "ipCidrRange": "0.0.0.3/32",
+    "network": "projects/test-project/global/networks/default",
+    "secondaryIpRanges": [
+      {
+        "ipCidrRange": "0.0.0.4/32",
+        "rangeName": "prod-cluster-pods-a",
+        "status": "IN_USE_MANAGED_POD"
+      },
+      {
+        "ipCidrRange": "0.0.0.5/32",
+        "rangeName": "prod-cluster-services-a",
+        "status": "IN_USE_SERVICE"
+      },
+      {
+        "ipCidrRange": "0.0.0.6/32",
+        "rangeName": "test-cluster-pods-b",
+        "status": "IN_USE_MANAGED_POD"
+      },
+      {
+        "ipCidrRange": "0.0.0.7/32",
+        "rangeName": "test-cluster-services-b",
+        "status": "IN_USE_SERVICE"
+      }
+    ],
+    "subnetwork": "projects/test-project/regions/europe-west3/subnetworks/default"
+  },
+  {
+    "ipCidrRange": "0.0.0.8/32",
+    "network": "projects/test-project/global/networks/default",
+    "subnetwork": "projects/test-project/regions/asia-northeast2/subnetworks/default"
+  }
+]

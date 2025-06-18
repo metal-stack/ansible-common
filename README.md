@@ -1,3 +1,5 @@
+# ⚠️ This repository has been archived. Please migrate to [metal-ansible-collections](https://github.com/metal-stack/metal-ansible-collections)!
+
 # Ansible Common
 
 This repository contains shared roles, modules and plugins for metal-stack.
@@ -6,7 +8,6 @@ This repository contains shared roles, modules and plugins for metal-stack.
 
 - [Modules](#modules)
 - [Roles](#roles)
-- [Dynamic Inventories](#dynamic-inventories)
 - [Filter Plugins](#filter-plugins)
 - [Usage](#usage)
 

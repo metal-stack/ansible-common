@@ -12,6 +12,9 @@ ExecStart=/usr/bin/docker run --name=%n \
 {% for key, value in systemd_service_environment.items() %}
     --env "{{ key }}={{ value }}" \
 {% endfor %}
+{% for key, value in systemd_credentials.items() %}
+    --enc "{{ key|upper }}_PATH=%d/{{ key }}"
+{% endfor %}
 {% for volume in systemd_docker_volumes %}
     --volume "{{ volume }}" \
 {% endfor %}
@@ -52,8 +55,7 @@ ExecStart=/usr/bin/docker run --name=%n \
     {{ systemd_docker_image_name }}:{{ systemd_docker_image_tag }} {% if systemd_docker_command %}{{ systemd_docker_command | join(" ") if systemd_docker_command is iterable else systemd_docker_command }}{% endif %}
 
 {% for key, value in systemd_credentials.items() %}
-LoadCredential=key:value
-Environment={{ key|upper }}_PATH=%d/key
+LoadCredential={{ key }}:{{ value }}
 {% endfor %}
 
 ExecStop=/usr/bin/docker stop %n

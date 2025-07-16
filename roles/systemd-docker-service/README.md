@@ -4,35 +4,36 @@ Renders a systemd unit file that runs an application within a docker container.
 
 ## Variables
 
-| Name                              | Mandatory | Description                                                                           |
-| --------------------------------- | --------- | ------------------------------------------------------------------------------------- |
-| systemd_service_name              | yes       | The name of the systemd service                                                       |
-| systemd_docker_image_name         | yes       | The name of the docker image to run                                                   |
-| systemd_docker_image_tag          | yes       | The tag of the docker image to run                                                    |
-| systemd_service_environment       |           | Environment variables to pass through to the docker container                         |
-| systemd_docker_network            |           | The docker network to use                                                             |
-| systemd_docker_command            |           | The command to tun the docker container with                                          |
-| systemd_docker_volumes            |           | Volumes to mount into the docker container                                            |
-| systemd_docker_dns                |           | DNS server IP addresses to use instead host configuration                             |
-| systemd_docker_cap_add            |           | Additional capabilities of the docker container                                       |
-| systemd_docker_ports              |           | Ports of the docker container to expose                                               |
-| systemd_docker_host_to_ip_mapping |           | Adds additional hosts to the docker container                                         |
-| systemd_docker_cpus               |           | The number of CPUs for the docker container to use                                    |
-| systemd_docker_cpu_period         |           | The CPU time period for the docker container to use                                   |
-| systemd_docker_cpu_quota          |           | The number of microseconds per period for the docker container to use                 |
-| systemd_docker_memory             |           | The maximum amount of memory for the docker container to use                          |
-| systemd_docker_log_driver         |           | The log driver to use for the container instead of the system default                 |
-| systemd_docker_log_opt_max_file   |           | The maximum amount of log files if applicable                                         |
-| systemd_docker_log_opt_max_size   |           | The maximum log file size if applicable                                               |
-| systemd_service_restart_sec       |           | The number of seconds to wait before restarting the systemd service                   |
-| systemd_service_timeout_start_sec |           | The number of seconds to wait before starting the systemd service                     |
-| systemd_service_timeout_stop_sec  |           | The number of seconds to wait for the systemd service to stop                         |
-| systemd_service_after             |           | The systemd unit after dependencies                                                   |
-| systemd_service_bindsto           |           | The systemd unit bindsto dependencies                                                 |
-| systemd_service_wantedby          |           | The systemd install wantedby dependencies                                             |
-| systemd_service_wants             |           | The systemd unit wants dependencies                                                   |
-| systemd_start                     |           | Starts the systemd service after rendering the template                               |
-| systemd_external_config_changed   |           | Indicates that the systemd should be restarted because external configuration changed |
+| Name                              | Mandatory | Description                                                                                                                        |
+|-----------------------------------|-----------|------------------------------------------------------------------------------------------------------------------------------------|
+| systemd_service_name              | yes       | The name of the systemd service                                                                                                    |
+| systemd_docker_image_name         | yes       | The name of the docker image to run                                                                                                |
+| systemd_docker_image_tag          | yes       | The tag of the docker image to run                                                                                                 |
+| systemd_service_environment       |           | Environment variables to pass through to the docker container                                                                      |
+| systemd_docker_network            |           | The docker network to use                                                                                                          |
+| systemd_docker_command            |           | The command to tun the docker container with                                                                                       |
+| systemd_docker_volumes            |           | Volumes to mount into the docker container                                                                                         |
+| systemd_docker_dns                |           | DNS server IP addresses to use instead host configuration                                                                          |
+| systemd_docker_cap_add            |           | Additional capabilities of the docker container                                                                                    |
+| systemd_docker_ports              |           | Ports of the docker container to expose                                                                                            |
+| systemd_docker_host_to_ip_mapping |           | Adds additional hosts to the docker container                                                                                      |
+| systemd_docker_cpus               |           | The number of CPUs for the docker container to use                                                                                 |
+| systemd_docker_cpu_period         |           | The CPU time period for the docker container to use                                                                                |
+| systemd_docker_cpu_quota          |           | The number of microseconds per period for the docker container to use                                                              |
+| systemd_docker_memory             |           | The maximum amount of memory for the docker container to use                                                                       |
+| systemd_docker_log_driver         |           | The log driver to use for the container instead of the system default                                                              |
+| systemd_docker_log_opt_max_file   |           | The maximum amount of log files if applicable                                                                                      |
+| systemd_docker_log_opt_max_size   |           | The maximum log file size if applicable                                                                                            |
+| systemd_service_restart_sec       |           | The number of seconds to wait before restarting the systemd service                                                                |
+| systemd_service_timeout_start_sec |           | The number of seconds to wait before starting the systemd service                                                                  |
+| systemd_service_timeout_stop_sec  |           | The number of seconds to wait for the systemd service to stop                                                                      |
+| systemd_service_after             |           | The systemd unit after dependencies                                                                                                |
+| systemd_service_bindsto           |           | The systemd unit bindsto dependencies                                                                                              |
+| systemd_service_wantedby          |           | The systemd install wantedby dependencies                                                                                          |
+| systemd_service_wants             |           | The systemd unit wants dependencies                                                                                                |
+| systemd_start                     |           | Starts the systemd service after rendering the template                                                                            |
+| systemd_external_config_changed   |           | Indicates that the systemd should be restarted because external configuration changed                                              |
+| systemd_credentials               |           | key value pair of credential name to file path to where the credential is stored, will be exposed then as KEY_PATH as env variable |
 
 ## Examples
 
@@ -64,5 +65,7 @@ Renders a systemd unit file that runs an application within a docker container.
       METAL_CORE_PARTITION_ID: "{{ partition_id }}"
       METAL_CORE_RACK_ID: "{{ partition_rack_id }}"
       METAL_CORE_BIND_ADDRESS: 0.0.0.0
+    systemd_credentials:
+      token: /etc/metal-apiserver-token.txt
       ...
 ```

@@ -6,10 +6,7 @@ import tarfile
 from io import BytesIO
 from yaml import safe_load
 from urllib.parse import urlparse
-
 from traceback import format_exc
-from yaml import safe_load
-from abc import ABC
 
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase
@@ -70,7 +67,9 @@ class ActionModule(ActionBase):
         }
 
         for f in files:
-            resolver = RemoteResolver(module=self, args=f)
+            args = task_vars | f
+
+            resolver = RemoteResolver(module=self, args=args)
 
             kwargs = dict()
             if f.get("oci_registry_username"):
@@ -103,53 +102,62 @@ class ActionModule(ActionBase):
 
 class RemoteResolver():
     def __init__(self, module, args):
-        for _, defaults in args.get("_cached_role_defaults", dict()).items():
-            args = args | defaults
+        self._module = module
 
-        for role_name in args.get("from_role_defaults", list()):
-            if not hasattr(self, '_cached_role_defaults'):
-                self._cached_role_defaults = dict()
-            elif role_name in self._cached_role_defaults:
-                continue
+        _args = args.copy()
 
-            res = self.load_role_default_vars(module=module, role_name=role_name)
+        for _, defaults in _args.get("_cached_role_defaults", dict()).items():
+            _args = _args | defaults
 
-            args = args | res
+        self._cached_role_defaults = dict()
 
-            self._cached_role_defaults[role_name] = res
+        if 'from_role_defaults' in _args:
+            if not isinstance(_args["from_role_defaults"], list):
+                raise Exception("role defaults must be provided as a list")
 
-        meta_var = module._templar.template(args.get("meta_var"))
+            for role_name in _args["from_role_defaults"]:
+                if role_name in self._cached_role_defaults:
+                    continue
+
+                res = self.load_role_default_vars(module=module, role_name=role_name)
+                self._cached_role_defaults[role_name] = res
+                _args = _args | res
+
+        meta_var = module._templar.template(_args.pop("meta_var", None))
 
         if meta_var:
-            meta_args = args.get(meta_var)
+            meta_args = _args.get(meta_var)
             if not meta_args:
                 raise Exception("""the meta variable with name "%s" specified for the setup_yaml is not defined, please provide it through inventory, role defaults or module args""" % meta_var)
 
-            args = args | meta_args
+            _args = _args | meta_args
 
-        self._module = module
-        self._url = module._templar.template(args.get("url"))
-        self._mapping = args.get("mapping")
-        self._nested = args.get("nested", list()) if args.get("recursive", True) else list()
-        self._replacements = args.get("replace", list())
-
+        self._url = module._templar.template(_args.pop("url", None))
         if not self._url:
             raise Exception("url is required")
 
+        self._mapping = _args.pop("mapping", None)
         if not self._mapping:
             raise Exception("mapping is required for %s" % self._url)
 
+        self._nested = _args.pop("nested", list()) if _args.pop("recursive", True) else list()
+        self._replacements = _args.pop("replace", list())
+
+        self._args = _args
+
 
     def resolve(self, **kwargs):
-
         content = ContentLoader(self._url, **kwargs).load()
 
+        # apply potential replacements
         for r in self._replacements:
             if r.get("key") is None or r.get("old") is None or r.get("new") is None:
                 raise Exception("replace must contain and dict with the keys for 'key', 'old' and 'new'")
             self.replace_key_value(content, r.get("key"), r.get("old"), r.get("new"))
 
         result = dict()
+
+        # map to variables
         for k, path in self._mapping.items():
             try:
                 value = self.dotted_path(content, path)
@@ -161,17 +169,33 @@ class RemoteResolver():
 
             result[k] = value
 
+        # resolve nested vectors
         for n in self._nested:
-            path = n.get("url_path")
+            path = n.pop("url_path", None)
             if not path:
                 raise Exception("nested entries must contain an url_path")
 
-            n["replace"] = n.get("replace", list()) + self._replacements
-            n["url"] = self.dotted_path(content, path)
-            n["_cached_role_defaults"] = self._cached_role_defaults
+            args = self._args.copy()
 
-            resolver = RemoteResolver(module=self._module, args=n)
+            try:
+                args["url"] = self.dotted_path(content, path)
+            except KeyError as e:
+                raise Exception("""url_path "%s" could not resolved in %s""" % (path, self._url))
+
+            args["meta_var"] = n.pop("meta_var", None)
+            args["mapping"] = n.pop("mapping", None)
+            args["nested"] = n.pop("nested", list())
+            args["recursive"] = n.pop("recursive", True)
+            args["replace"] = n.pop("replace", list()) + self._replacements
+            args["_cached_role_defaults"] = self._cached_role_defaults
+
+            resolver = RemoteResolver(module=self._module, args=args)
+
             for k, v in resolver.resolve(**kwargs).items():
+                if result.get(k) is not None:
+                    # nested values do not overwrite the parent values
+                    continue
+
                 result[k] = v
 
         return result
@@ -210,7 +234,7 @@ class RemoteResolver():
                 RemoteResolver.replace_key_value(v, key, old, new)
 
 
-class ContentLoader(ABC):
+class ContentLoader():
     def __init__(self, url, **kwargs):
         if url.startswith(OciLoader.OCI_PREFIX):
             self._loader = OciLoader(url, **kwargs)
@@ -218,6 +242,7 @@ class ContentLoader(ABC):
             self._loader = UrlLoader(url)
 
     def load(self) -> dict:
+        display.v("loading remote content from %s" % self._loader._url)
         raw = self._loader.load()
         return safe_load(raw)
 
@@ -241,7 +266,6 @@ class OciLoader():
         self._registry, self._namespace, self._version = self._parse_oci_ref(self._url, scheme=kwargs.get("oci_registry_scheme", "https"))
         self._username = kwargs.get("oci_registry_username")
         self._password = kwargs.get("oci_registry_password")
-
 
     def load(self):
         if not HAS_OPENCONTAINERS:

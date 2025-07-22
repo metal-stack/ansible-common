@@ -50,7 +50,17 @@ class ActionModule(ActionBase):
         self._supports_check_mode = True
 
         files = self._task.args.get('files', task_vars.get('setup_yaml'))
-        smart = boolean(self._task.args.get('smart', task_vars.get('setup_yaml_smart', True)), strict=False)
+        smart = boolean(self._task.args.get(
+            'smart', task_vars.get('setup_yaml_smart', True)), strict=False)
+
+        release_vector_cache_file_path = os.path.join(
+            tempfile.gettempdir(), ActionModule.RELEASE_VECTOR_CACHE_FILE)
+        if smart and os.path.isfile(release_vector_cache_file_path):
+            result["changed"] = False
+            with open(release_vector_cache_file_path, 'r') as vector:
+                result["ansible_facts"] = json.load(vector)
+            return result
+
         if not files:
             result["skipped"] = True
             return result
@@ -67,14 +77,6 @@ class ActionModule(ActionBase):
         if smart and task_vars.get("ansible_facts", {}).get(self.ALREADY_RESOLVED_MARKER, False):
             result["skipped"] = True
             return self._ensure_invocation(result)
-
-        release_vector_cache_file_path = os.path.join(
-            tempfile.gettempdir(), ActionModule.RELEASE_VECTOR_CACHE_FILE)
-        if smart and os.path.isfile(release_vector_cache_file_path):
-            result["changed"] = False
-            with open(release_vector_cache_file_path, 'r') as vector:
-                result["ansible_facts"] = json.load(vector)
-            return result
 
         result["changed"] = False
 

@@ -391,12 +391,12 @@ class OciLoader():
 
         try:
             if self._cosign_key:
-                subprocess.run(args=["cosign", "verify", "--key", "env://PUBKEY", self._url],
+                subprocess.run(args=["/usr/local/bin/cosign", "verify", "--key", "env://PUBKEY", self._url],
                                env=dict(PUBKEY=self._cosign_key), check=True, capture_output=True)
                 display.display(
                     "- OCI artifact was verified successfully by public key through cosign", color=C.COLOR_OK)
             elif self._cosign_identity or self._cosign_issuer:
-                subprocess.run(args=["cosign", "verify", "--certificate-oidc-issuer", self._cosign_issuer,
+                subprocess.run(args=["/usr/local/bin/cosign", "verify", "--certificate-oidc-issuer", self._cosign_issuer,
                                      "--certificate-identity", self._cosign_identity, self._url],
                                check=True, capture_output=True)
                 display.display(

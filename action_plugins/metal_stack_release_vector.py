@@ -271,6 +271,7 @@ class RemoteResolver():
                         'repo': role_repository,
                         'dest': role_path,
                         'depth': 1,
+                        'version': role_version,
                     }, task_vars=self._task_vars, tmp=None)
                 except Exception as e:
                     raise Exception(

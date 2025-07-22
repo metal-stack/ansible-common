@@ -5,6 +5,7 @@ import tarfile
 import tempfile
 import json
 import os
+import subprocess
 
 from io import BytesIO
 from yaml import safe_load
@@ -82,7 +83,13 @@ class ActionModule(ActionBase):
                 oci_registry_password=vector.pop(
                     "oci_registry_password", None),
                 oci_registry_scheme=vector.pop(
-                    "oci_registry_scheme", 'https')
+                    "oci_registry_scheme", 'https'),
+                oci_cosign_verify_certificate_identity=vector.pop(
+                    "oci_cosign_verify_certificate_identity", None),
+                oci_cosign_verify_certificate_oidc_issuer=vector.pop(
+                    "oci_cosign_verify_certificate_oidc_issuer", None),
+                oci_cosign_verify_key=vector.pop(
+                    "oci_cosign_verify_key", None),
             )
 
             try:
@@ -367,6 +374,12 @@ class OciLoader():
         self._username = kwargs.pop("oci_registry_username", None)
         self._password = kwargs.pop("oci_registry_password", None)
 
+        self._cosign_identity = kwargs.pop(
+            "oci_cosign_verify_certificate_identity", None)
+        self._cosign_issuer = kwargs.pop(
+            "oci_cosign_verify_certificate_oidc_issuer", None)
+        self._cosign_key = kwargs.pop("oci_cosign_verify_key", None)
+
         if kwargs:
             raise Exception("unknown parameters passed to oci loader: %s" %
                             kwargs.keys())
@@ -375,6 +388,22 @@ class OciLoader():
         if not HAS_OPENCONTAINERS:
             raise ImportError(
                 "opencontainers must be installed in order to resolve metal-stack oci release vectors")
+
+        try:
+            if self._cosign_key:
+                subprocess.run(args=["cosign", "verify", "--key", "env://PUBKEY", self._url],
+                               env=dict(PUBKEY=self._cosign_key), check=True, capture_output=True)
+                display.display(
+                    "- OCI artifact was verified successfully by public key through cosign", color=C.COLOR_OK)
+            elif self._cosign_identity or self._cosign_issuer:
+                subprocess.run(args=["cosign", "verify", "--certificate-oidc-issuer", self._cosign_issuer,
+                                     "--certificate-identity", self._cosign_identity, self._url],
+                               check=True, capture_output=True)
+                display.display(
+                    "- OCI artifact was verified successfully by oidc-issuer through cosign", color=C.COLOR_OK)
+        except subprocess.CalledProcessError as e:
+            raise Exception("cosign verification returned with exit code %s: %s" % (
+                e.returncode, to_native(e.stderr)))
 
         blob, media_type = self._download_blob()
 

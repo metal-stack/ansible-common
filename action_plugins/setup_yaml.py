@@ -1,6 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import tempfile
+import json
+import os
+
 from traceback import format_exc
 from yaml import safe_load
 
@@ -19,6 +23,7 @@ except ImportError:
 
 class ActionModule(ActionBase):
     ALREADY_RESOLVED_MARKER = "_yaml_files_already_resolved"
+    RELEASE_VECTOR_CACHE_FILE = "metal-stack-release-vector-cache.json"
 
     def _ensure_invocation(self, result):
         # NOTE: adding invocation arguments here needs to be kept in sync with
@@ -62,6 +67,14 @@ class ActionModule(ActionBase):
         if smart and task_vars.get("ansible_facts", {}).get(self.ALREADY_RESOLVED_MARKER, False):
             result["skipped"] = True
             return self._ensure_invocation(result)
+
+        release_vector_cache_file_path = os.path.join(
+            tempfile.gettempdir(), ActionModule.RELEASE_VECTOR_CACHE_FILE)
+        if smart and os.path.isfile(release_vector_cache_file_path):
+            result["changed"] = False
+            with open(release_vector_cache_file_path, 'r') as vector:
+                result["ansible_facts"] = json.load(vector)
+            return result
 
         result["changed"] = False
 

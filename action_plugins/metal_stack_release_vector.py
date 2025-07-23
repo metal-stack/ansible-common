@@ -18,9 +18,8 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.module_utils._text import to_native
 from ansible.playbook.role import Role
 from ansible.playbook.role.include import RoleInclude
-from ansible.errors import AnsibleError
 from ansible import constants as C
-
+from ansible.module_utils.common import process
 
 HAS_OPENCONTAINERS = True
 try:
@@ -390,17 +389,23 @@ class OciLoader():
                 "opencontainers must be installed in order to resolve metal-stack oci release vectors")
 
         try:
+            bin_path = process.get_bin_path(
+                "cosign", required=True, opt_dirs=None)
+
             if self._cosign_key:
-                subprocess.run(args=["/usr/local/bin/cosign", "verify", "--key", "env://PUBKEY", self._url],
+                subprocess.run(args=[bin_path, "verify", "--key", "env://PUBKEY", self._url],
                                env=dict(PUBKEY=self._cosign_key), check=True, capture_output=True)
                 display.display(
                     "- OCI artifact was verified successfully by public key through cosign", color=C.COLOR_OK)
             elif self._cosign_identity or self._cosign_issuer:
-                subprocess.run(args=["/usr/local/bin/cosign", "verify", "--certificate-oidc-issuer", self._cosign_issuer,
+                subprocess.run(args=[bin_path, "verify", "--certificate-oidc-issuer", self._cosign_issuer,
                                      "--certificate-identity", self._cosign_identity, self._url],
                                check=True, capture_output=True)
                 display.display(
                     "- OCI artifact was verified successfully by oidc-issuer through cosign", color=C.COLOR_OK)
+        except ValueError as e:
+            raise Exception("cosign needs to be installed: %s" %
+                            to_native(e.message))
         except subprocess.CalledProcessError as e:
             raise Exception("cosign verification returned with exit code %s: %s" % (
                 e.returncode, to_native(e.stderr)))

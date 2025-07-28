@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -35,7 +36,8 @@ def run_module():
     elif isinstance(kubeconfig, dict):
         api_client = config.new_client_from_config_dict(config_dict=kubeconfig)
     else:
-        module.fail_json(msg="Error while reading kubeconfig parameter - a string or dict expected, but got %s instead" % type(kubeconfig), **result)
+        module.fail_json(
+            msg="Error while reading kubeconfig parameter - a string or dict expected, but got %s instead" % type(kubeconfig), **result)
 
     dynamic_client = dynamic.DynamicClient(client=api_client)
 
@@ -43,9 +45,11 @@ def run_module():
     kind = module.params.get('kind', None)
 
     try:
-        api_response = dynamic_client.resources.search(api_version=api_version, kind=kind)
+        api_response = dynamic_client.resources.search(
+            api_version=api_version, kind=kind)
     except ApiException as e:
-        module.fail_json(msg="Exception when searching discovery api: %s\n" % e, **result)
+        module.fail_json(
+            msg="Exception when searching discovery api: %s\n" % e, **result)
 
     resources = []
 

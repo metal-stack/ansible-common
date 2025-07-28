@@ -396,13 +396,13 @@ class OciLoader():
                 subprocess.run(args=[bin_path, "verify", "--key", "env://PUBKEY", self._url],
                                env=dict(PUBKEY=self._cosign_key), check=True, capture_output=True)
                 display.display(
-                    "- %s was verified successfully by public key through cosign", self._url, color=C.COLOR_OK)
+                    "- %s was verified successfully by public key through cosign" % self._url, color=C.COLOR_OK)
             elif self._cosign_identity or self._cosign_issuer:
                 subprocess.run(args=[bin_path, "verify", "--certificate-oidc-issuer", self._cosign_issuer,
                                      "--certificate-identity", self._cosign_identity, self._url],
                                check=True, capture_output=True)
                 display.display(
-                    "- %s was verified successfully by oidc-issuer through cosign", self._url, color=C.COLOR_OK)
+                    "- %s was verified successfully by oidc-issuer through cosign" % self._url, color=C.COLOR_OK)
         except ValueError as e:
             raise Exception("cosign needs to be installed: %s" %
                             to_native(e.message))

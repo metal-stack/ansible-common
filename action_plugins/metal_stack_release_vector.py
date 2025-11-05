@@ -14,6 +14,7 @@ from traceback import format_exc
 
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase
+from ansible.errors import AnsibleError
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.module_utils._text import to_native
 from ansible.playbook.role import Role
@@ -186,26 +187,27 @@ class RemoteResolver():
 
             self._install_ansible_roles(role_dict=role_dict, **kwargs)
 
-        # find mapping_path in variable sources (task_vars and role default vars)
-        try:
-            mapping = self.dotted_path(
-                self._task_vars | self._load_role_default_vars(), self._mapping_path)
-        except KeyError:
-            raise Exception(
-                "no mapping not found in any variables at %s" % self._mapping_path)
-
         # map to variables
         result = dict()
 
-        for k, path in mapping.items():
+        if self._mapping_path:
+            # find mapping_path in variable sources (task_vars and role default vars)
             try:
-                value = self.dotted_path(content, path)
+                mapping = self.dotted_path(
+                    self._task_vars | self._load_role_default_vars(), self._mapping_path)
             except KeyError:
-                display.warning(
-                    """path %s provided by mapping does not exist in %s""" % (path, self._url))
-                continue
+                raise Exception(
+                    "no mapping not found in any variables at %s" % self._mapping_path)
 
-            result[k] = value
+            for k, path in mapping.items():
+                try:
+                    value = self.dotted_path(content, path)
+                except KeyError:
+                    display.warning(
+                        """path %s provided by mapping does not exist in %s""" % (path, self._url))
+                    continue
+
+                result[k] = value
 
         # resolve nested vectors
         for n in self._nested:
@@ -273,12 +275,20 @@ class RemoteResolver():
                           tar_dest=os.path.dirname(role_path), **kwargs).load()
             else:
                 try:
-                    self._module._execute_module(module_name='ansible.builtin.git', module_args={
+                    module_result = self._module._execute_module(module_name='ansible.builtin.git', module_args={
                         'repo': role_repository,
                         'dest': role_path,
                         'depth': 1,
                         'version': role_version,
                     }, task_vars=self._task_vars, tmp=None)
+
+                    if module_result.get('failed'):
+                        msg = module_result.get('module_stderr')
+                        if not msg:
+                            msg = module_result.get('module_stdout')
+                        if not msg:
+                            msg = module_result.get('msg')
+                        raise AnsibleError(msg)
                 except Exception as e:
                     raise Exception(
                         "error cloning git repository: %s" % to_native(e))

@@ -56,16 +56,16 @@ class ActionModule(ActionBase):
         cache_enabled = boolean(self._task.args.get('cache', task_vars.get(
             'metal_stack_release_vector_cache', True)), strict=False)
 
-        if not vectors:
-            result["skipped"] = True
-            result["msg"] = "no release vectors were provided"
-            return result
-
         if cache_enabled and os.path.isfile(self._cache_file_path()):
             result["changed"] = False
             with open(self._cache_file_path(), 'r') as vector:
                 result["ansible_facts"] = json.load(vector)
             display.vvv("- Returning cache from %s" % self._cache_file_path)
+            return result
+
+        if not vectors:
+            result["failed"] = True
+            result["msg"] = "no release vectors were provided"
             return result
 
         if not isinstance(vectors, list):
@@ -143,10 +143,6 @@ class RemoteResolver():
             raise Exception("url is required")
 
         self._mapping_path = args.pop("variable_mapping_path", None)
-        if not self._mapping_path:
-            raise Exception(
-                "variable_mapping_path is required for %s" % self._url)
-
         self._replacements = args.pop("replace", self._task_vars.get(
             "metal_stack_release_vector_replacements", list()))
 

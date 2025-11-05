@@ -24,7 +24,8 @@ description:
 options:
     vectors:
         description:
-            - The release version reference to download.
+            - The release vector reference to download.
+            - This option can also be set through the metal_stack_release_vectors variable from somewhere in the task vars.
         type: list
         elements: dict
         required: false

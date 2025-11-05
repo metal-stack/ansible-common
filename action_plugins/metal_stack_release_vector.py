@@ -197,7 +197,7 @@ class RemoteResolver():
                     self._task_vars | self._load_role_default_vars(), self._mapping_path)
             except KeyError:
                 raise Exception(
-                    "no mapping not found in any variables at %s" % self._mapping_path)
+                    "no mapping found in any variables at %s" % self._mapping_path)
 
             for k, path in mapping.items():
                 try:

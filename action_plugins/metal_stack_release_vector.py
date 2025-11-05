@@ -483,7 +483,7 @@ class OciLoader():
 
     @staticmethod
     def _parse_oci_ref(full_ref, scheme='https'):
-        ref, *tag = full_ref.split(":", 1)
+        ref, *tag = full_ref.rsplit(":", maxsplit=1)
         tag = tag[0] if tag else None
         if tag is None:
             raise Exception("oci ref %s needs to specify a tag" % full_ref)

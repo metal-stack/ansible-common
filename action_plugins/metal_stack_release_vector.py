@@ -77,24 +77,9 @@ class ActionModule(ActionBase):
         ansible_facts = {}
 
         for vector in vectors:
-            kwargs = dict(
-                oci_registry_username=vector.pop(
-                    "oci_registry_username", None),
-                oci_registry_password=vector.pop(
-                    "oci_registry_password", None),
-                oci_registry_scheme=vector.pop(
-                    "oci_registry_scheme", 'https'),
-                oci_cosign_verify_certificate_identity=vector.pop(
-                    "oci_cosign_verify_certificate_identity", None),
-                oci_cosign_verify_certificate_oidc_issuer=vector.pop(
-                    "oci_cosign_verify_certificate_oidc_issuer", None),
-                oci_cosign_verify_key=vector.pop(
-                    "oci_cosign_verify_key", None),
-            )
-
             try:
                 data = RemoteResolver(
-                    module=self, task_vars=task_vars, args=vector).resolve(**kwargs)
+                    module=self, task_vars=task_vars, args=vector).resolve()
             except Exception as e:
                 result["failed"] = True
                 result["msg"] = "error resolving yaml"
@@ -153,13 +138,28 @@ class RemoteResolver():
             'metal_stack_release_vector_install_roles', True))
         self._ansible_roles_path = args.pop('ansible_roles_path', None)
 
+        self._loader_args = dict(
+            oci_registry_username=args.pop(
+                "oci_registry_username", None),
+            oci_registry_password=args.pop(
+                "oci_registry_password", None),
+            oci_registry_scheme=args.pop(
+                "oci_registry_scheme", 'https'),
+            oci_cosign_verify_certificate_identity=args.pop(
+                "oci_cosign_verify_certificate_identity", None),
+            oci_cosign_verify_certificate_oidc_issuer=args.pop(
+                "oci_cosign_verify_certificate_oidc_issuer", None),
+            oci_cosign_verify_key=args.pop(
+                "oci_cosign_verify_key", None),
+        )
+
         if args:
             raise Exception("unknown parameters used for %s: %s" %
                             (self._url, args.keys()))
 
-    def resolve(self, **kwargs):
+    def resolve(self):
         # download release vector
-        content = ContentLoader(self._url, **kwargs).load()
+        content = ContentLoader(self._url, **self._loader_args).load()
 
         # apply replacements
         for r in self._replacements:
@@ -181,7 +181,8 @@ class RemoteResolver():
             else:
                 role_dict = content.get("ansible-roles", {})
 
-            self._install_ansible_roles(role_dict=role_dict, **kwargs)
+            self._install_ansible_roles(
+                role_dict=role_dict, **self._loader_args)
 
         # map to variables
         result = dict()
@@ -218,7 +219,7 @@ class RemoteResolver():
                     """url_path "%s" does not exist in %s""" % (path, self._url))
 
             results = RemoteResolver(
-                module=self._module, task_vars=self._task_vars, args=n).resolve(**kwargs)
+                module=self._module, task_vars=self._task_vars, args=n).resolve()
 
             for k, v in results.items():
                 if result.get(k) is not None:
@@ -232,11 +233,16 @@ class RemoteResolver():
         for role_name, spec in role_dict.items():
             role_ref = spec.get("oci")
             role_repository = spec.get("repository")
+            prefix_filter = None
 
             # lookup aliases
             for alias in self._role_aliases:
-                if alias.get("repository") == role_repository:
-                    role_name = alias.get("alias")
+                if alias.get("name") == role_name:
+                    new_role_name = alias.get("alias")
+                    prefix_filter = OciLoader.prefix_filter(
+                        role_name, new_role_name)
+                    role_name = new_role_name
+                    break
 
             role_version = spec.get("version")
 
@@ -268,7 +274,7 @@ class RemoteResolver():
 
             if role_ref:
                 OciLoader(url=role_ref + ":" + role_version,
-                          tar_dest=os.path.dirname(role_path), **kwargs).load()
+                          tar_dest=os.path.dirname(role_path), dest_filter=prefix_filter, **kwargs).load()
             else:
                 try:
                     module_result = self._module._execute_module(module_name='ansible.builtin.git', module_args={
@@ -374,6 +380,7 @@ class OciLoader():
         self._url = url
         self._member = kwargs.pop("tar_member_file_name", "release.yaml")
         self._dest = kwargs.pop("tar_dest", None)
+        self._dest_filter = kwargs.pop("dest_filter", None)
         self._registry, self._namespace, self._version = self._parse_oci_ref(
             self._url, scheme=kwargs.pop("oci_registry_scheme", "https"))
         self._username = kwargs.pop("oci_registry_username", None)
@@ -421,7 +428,7 @@ class OciLoader():
         if media_type == self.ANSIBLE_ROLE_MEDIA_TYPE:
             if not self._dest:
                 raise Exception("tar destination must be specified")
-            return self._extract_tar_gzip(blob, dest=self._dest)
+            return self._extract_tar_gzip(blob, dest=self._dest, filter=self._dest_filter)
         else:
             return self._extract_tar_gzip_file(blob, member=self._member)
 
@@ -497,10 +504,20 @@ class OciLoader():
                         "error extracting tar member from oci layer: %s" % to_native(e))
 
     @staticmethod
-    def _extract_tar_gzip(bytes, dest):
+    def _extract_tar_gzip(bytes, dest, filter=None):
         with tarfile.open(fileobj=BytesIO(bytes), mode='r:gz') as tar:
             try:
-                tar.extractall(dest, tar.getmembers())
+                tar.extractall(
+                    path=dest, members=tar.getmembers(), filter=filter)
             except Exception as e:
                 raise Exception(
                     "error extracting tar from oci layer: %s" % to_native(e))
+
+    @staticmethod
+    def prefix_filter(old: str, new: str):
+        def filter(member: tarfile.TarInfo, _: str, /) -> tarfile.TarInfo | None:
+            if member.name.startswith(old):
+                stripped = member.name.removeprefix(old)
+                member.name = new + stripped
+            return member
+        return filter

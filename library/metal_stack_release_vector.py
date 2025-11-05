@@ -83,9 +83,9 @@ options:
                 type: list
                 elements: dict
                 suboptions:
-                    repository:
+                    name:
                         description:
-                            - The name of the role repository to alias.
+                            - The name of the role to alias.
                         required: true
                         type: str
                     alias:

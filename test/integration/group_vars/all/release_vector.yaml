@@ -1,0 +1,6 @@
+---
+metal_stack_release_vectors:
+  - url: oci://localhost:5000/releases:simple
+    variable_mapping_path: test_release.mapping
+    include_role_defaults: ansible-test/roles/defaults
+    oci_registry_scheme: http

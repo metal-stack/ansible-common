@@ -1,0 +1,66 @@
+---
+- name: Test role was installed
+  hosts: all
+  connection: local
+  gather_facts: no
+  roles:
+    - ansible-test/roles/test
+
+- name: Test nested release vector with replaces and role name aliasing
+  hosts: all
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Nested
+      metal_stack_release_vector:
+        cache: false
+        vectors:
+          - url: oci://localhost:5000/releases:nested
+            variable_mapping_path: custom_mapping
+            oci_registry_scheme: http
+            role_aliases:
+              - name: ansible-test
+                alias: alias-role
+            replace:
+              - key: repository
+                old: github.com
+                new: replaced.com
+            nested:
+              - url_path: "vectors.simple.url"
+                variable_mapping_path: test_release.mapping
+                include_role_defaults: ansible-test/roles/defaults
+                oci_registry_scheme: http
+      vars:
+        custom_mapping:
+          test_nested_component_name: "docker-images.test.name"
+          test_nested_component_tag: "docker-images.test.tag"
+          test_nested_component_repo: "docker-images.test.repository"
+      register: facts
+
+    - name: Check role is installed to alias name
+      assert:
+        that:
+          - lookup('fileglob', '/root/.ansible/roles/alias-role/roles/test/tasks/*.yaml')
+
+    - name: Assert variables values were replaced
+      assert:
+        that:
+          - test_nested_component_tag is defined
+          - test_nested_component_tag == 'v2.0.0'
+          - test_nested_component_name is defined
+          - test_nested_component_name == 'ghcr.io/metal-stack/test'
+          - test_nested_component_repo is defined
+          - test_nested_component_repo == 'https://replaced.com/metal-stack/test'
+
+    - name: resolve real metal-stack release vector (including cosign validation)
+      metal_stack_release_vector:
+        cache: false
+        vectors:
+          - url: oci://ghcr.io/metal-stack/releases:develop
+            variable_mapping_path: metal_stack_release.mapping
+            include_role_defaults: metal-roles/common/roles/defaults
+            oci_cosign_verify_key: |
+              -----BEGIN PUBLIC KEY-----
+              MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdeAXd2namgVNDT0APmogKGwaV+Q4
+              rfe4uVgmsyBbb6TrhX5Py6x1PsonDahTvdVpbSGC7QGEjxIHdi8HnJ4Okg==
+              -----END PUBLIC KEY-----

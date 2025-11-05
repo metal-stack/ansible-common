@@ -1,0 +1,5 @@
+---
+test_release:
+  mapping:
+    test_component_name: "docker-images.test.name"
+    test_component_tag: "docker-images.test.tag"

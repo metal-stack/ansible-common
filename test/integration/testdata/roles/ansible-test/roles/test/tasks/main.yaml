@@ -1,0 +1,11 @@
+---
+- name: resolve release vector
+  metal_stack_release_vector:
+
+- name: assert variables were resolved
+  assert:
+    that:
+      - test_component_tag is defined
+      - test_component_tag == 'v2.0.0'
+      - test_component_name is defined
+      - test_component_name == 'ghcr.io/metal-stack/test'

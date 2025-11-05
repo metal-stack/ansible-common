@@ -172,7 +172,6 @@ EXAMPLES = '''
       - url: oci://ghcr.io/metal-stack/releases:develop
         variable_mapping_path: metal_stack_release.mapping
         include_role_defaults: metal-roles/common/roles/defaults
-  register: release_vector
 
 # see integration.yaml in test folder for more examples
 '''

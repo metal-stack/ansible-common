@@ -100,7 +100,9 @@ class ActionModule(ActionBase):
             ))
 
         if validation_result.error_messages:
-            raise AnsibleError(validation_result.error_messages)
+            result["failed"] = True
+            result["msg"] = str(validation_result.error_messages)
+            return result
 
         self._supports_check_mode = True
 
@@ -112,16 +114,6 @@ class ActionModule(ActionBase):
             with open(self._cache_file_path(), 'r') as vector:
                 result["ansible_facts"] = json.load(vector)
             display.vvv("- Returning cache from %s" % self._cache_file_path)
-            return result
-
-        if not vectors:
-            result["failed"] = True
-            result["msg"] = "no release vectors were provided"
-            return result
-
-        if not isinstance(vectors, list):
-            result["failed"] = True
-            result["msg"] = "vectors must be a list"
             return result
 
         result["changed"] = False

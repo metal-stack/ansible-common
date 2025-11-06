@@ -15,7 +15,6 @@ from traceback import format_exc
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
-from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.module_utils._text import to_native
 from ansible.playbook.role import Role
 from ansible.playbook.role.include import RoleInclude
@@ -47,16 +46,68 @@ class ActionModule(ActionBase):
             task_vars = dict()
 
         super(ActionModule, self).run(tmp, task_vars)
-        result = dict()
+        del tmp  # tmp no longer has any effect
+
+        self._task.args.setdefault('vectors', task_vars.get(
+            'metal_stack_release_vectors', None))
+
+        common_vectors_argument_spec = dict(
+            variable_mapping_path=dict(type='str', required=False),
+            include_role_defaults=dict(type='str', required=False),
+            install_roles=dict(type='bool', required=False, default=True),
+            ansible_roles_path=dict(
+                type='str', required=False, default="ansible-roles"),
+            role_aliases=dict(type='list', elements='dict', required=False, default=list(), options=dict(
+                name=dict(type='str', required=True),
+                alias=dict(type='str', required=True),
+            )),
+            replace=dict(type='list', elements='dict', required=False, default=list(), options=dict(
+                key=dict(type='str', required=True),
+                old=dict(type='str', required=True),
+                new=dict(type='str', required=True),
+            )),
+            oci_registry_username=dict(type='str', required=False),
+            oci_registry_password=dict(type='str', required=False),
+            oci_registry_scheme=dict(
+                type='str', required=False, default='https'),
+            oci_cosign_verify_certificate_identity=dict(
+                type='str', required=False),
+            oci_cosign_verify_certificate_oidc_issuer=dict(
+                type='str', required=False),
+            oci_cosign_verify_key=dict(type='str', required=False),
+        )
+
+        nested_vectors_argument_spec = dict(
+            url_path=dict(type='str', required=True),
+            # we do not go into further depths here
+            nested=dict(type='list', elements='dict',
+                        required=False, default=list()),
+        )
+        nested_vectors_argument_spec.update(common_vectors_argument_spec)
+
+        vectors_options = dict(
+            url=dict(type='str', required=True),
+            nested=dict(type='list', elements='dict', required=False, default=list(),
+                        options=nested_vectors_argument_spec),
+        )
+        vectors_options.update(common_vectors_argument_spec)
+
+        validation_result, task_args = self.validate_argument_spec(
+            argument_spec=dict(
+                cache=dict(type='bool', required=False, default=True),
+                vectors=dict(type='list', elements='dict',
+                             required=False, default=list(), options=vectors_options),
+            ))
+
+        if validation_result.error_messages:
+            raise AnsibleError(validation_result.error_messages)
 
         self._supports_check_mode = True
 
-        vectors = self._task.args.get(
-            'vectors', task_vars.get('metal_stack_release_vectors'))
-        cache_enabled = boolean(self._task.args.get('cache', task_vars.get(
-            'metal_stack_release_vector_cache', True)), strict=False)
+        result = dict()
+        vectors = task_args.get('vectors')
 
-        if cache_enabled and os.path.isfile(self._cache_file_path()):
+        if task_args.get('cache') and os.path.isfile(self._cache_file_path()):
             result["changed"] = False
             with open(self._cache_file_path(), 'r') as vector:
                 result["ansible_facts"] = json.load(vector)
@@ -79,7 +130,7 @@ class ActionModule(ActionBase):
         for vector in vectors:
             try:
                 data = RemoteResolver(
-                    module=self, task_vars=task_vars, args=vector).resolve()
+                    module=self, task_vars=task_vars, task_args=vector).resolve()
             except Exception as e:
                 result["failed"] = True
                 result["msg"] = "error resolving yaml"
@@ -101,7 +152,7 @@ class ActionModule(ActionBase):
 
         result["ansible_facts"] = ansible_facts
 
-        if cache_enabled:
+        if task_args.get('cache'):
             with open(self._cache_file_path(), 'w') as vector:
                 vector.write(json.dumps(ansible_facts))
                 display.vvv("- Written cache file to %s" %
@@ -117,45 +168,47 @@ class ActionModule(ActionBase):
 class RemoteResolver():
     _cached_role_defaults = dict()
 
-    def __init__(self, module, task_vars, args):
+    def __init__(self, module, task_vars, task_args):
         self._module = module
         self._task_vars = task_vars.copy()
 
-        args = args.copy()
+        task_args = task_args.copy()
 
-        self._url = module._templar.template(args.pop("url", None))
+        self._url = module._templar.template(task_args.pop("url", None))
         if not self._url:
             raise Exception("url is required")
 
-        self._mapping_path = args.pop("variable_mapping_path", None)
-        self._replacements = args.pop("replace", self._task_vars.get(
+        self._mapping_path = task_args.pop("variable_mapping_path", None)
+        self._replacements = task_args.pop("replace", self._task_vars.get(
             "metal_stack_release_vector_replacements", list()))
 
-        self._nested = args.pop("nested", list())
-        self._include_role_defaults = args.pop("include_role_defaults", None)
-        self._role_aliases = args.pop("role_aliases", list())
-        self._install_roles = args.pop('install_roles', self._task_vars.get(
+        self._nested = task_args.pop("nested", list())
+        self._include_role_defaults = task_args.pop(
+            "include_role_defaults", None)
+        self._role_aliases = task_args.pop("role_aliases", list())
+        self._install_roles = task_args.pop('install_roles', self._task_vars.get(
             'metal_stack_release_vector_install_roles', True))
-        self._ansible_roles_path = args.pop('ansible_roles_path', None)
+        self._ansible_roles_path = task_args.pop(
+            'ansible_roles_path', "ansible-roles")
 
         self._loader_args = dict(
-            oci_registry_username=args.pop(
+            oci_registry_username=task_args.pop(
                 "oci_registry_username", None),
-            oci_registry_password=args.pop(
+            oci_registry_password=task_args.pop(
                 "oci_registry_password", None),
-            oci_registry_scheme=args.pop(
+            oci_registry_scheme=task_args.pop(
                 "oci_registry_scheme", 'https'),
-            oci_cosign_verify_certificate_identity=args.pop(
+            oci_cosign_verify_certificate_identity=task_args.pop(
                 "oci_cosign_verify_certificate_identity", None),
-            oci_cosign_verify_certificate_oidc_issuer=args.pop(
+            oci_cosign_verify_certificate_oidc_issuer=task_args.pop(
                 "oci_cosign_verify_certificate_oidc_issuer", None),
-            oci_cosign_verify_key=args.pop(
+            oci_cosign_verify_key=task_args.pop(
                 "oci_cosign_verify_key", None),
         )
 
-        if args:
+        if task_args:
             raise Exception("unknown parameters used for %s: %s" %
-                            (self._url, args.keys()))
+                            (self._url, task_args.keys()))
 
     def resolve(self):
         # download release vector
@@ -171,15 +224,12 @@ class RemoteResolver():
 
         # setup ansible-roles of release vector
         if self._install_roles:
-            if self._ansible_roles_path:
-                try:
-                    role_dict = self.dotted_path(
-                        content, self._ansible_roles_path)
-                except KeyError:
-                    raise Exception("given ansible-roles path %s not found in %s" %
-                                    (self._ansible_roles_path, self._url))
-            else:
-                role_dict = content.get("ansible-roles", {})
+            try:
+                role_dict = self.dotted_path(
+                    content, self._ansible_roles_path)
+            except KeyError:
+                raise Exception("given ansible-roles path %s not found in %s" %
+                                (self._ansible_roles_path, self._url))
 
             self._install_ansible_roles(
                 role_dict=role_dict, **self._loader_args)
@@ -219,7 +269,7 @@ class RemoteResolver():
                     """url_path "%s" does not exist in %s""" % (path, self._url))
 
             results = RemoteResolver(
-                module=self._module, task_vars=self._task_vars, args=n).resolve()
+                module=self._module, task_vars=self._task_vars, task_args=n).resolve()
 
             for k, v in results.items():
                 if result.get(k) is not None:

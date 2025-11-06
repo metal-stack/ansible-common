@@ -76,12 +76,14 @@ options:
                     - A dotted path to the "ansible-roles" dictionary in the release vector when using the install_roles option.
                     - By default the module uses the "ansible-roles", this is option is just a possible overwrite for this option.
                 required: false
+                default: ansible-roles
                 type: str
             role_aliases:
                 description:
                     - An optional list of aliases to modify the installation path for the ansible-role installation.
                 type: list
                 elements: dict
+                required: false
                 suboptions:
                     name:
                         description:
@@ -156,6 +158,7 @@ options:
             - Whether or not to utilize a cache file for early returning on repeated module executions.
         type: bool
         required: false
+        default: true
 author:
     - metal-stack
 notes:

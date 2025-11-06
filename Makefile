@@ -29,7 +29,7 @@ test-integration:
 		-e ANSIBLE_COLLECTIONS_SCAN_SYS_PATH=false \
 		-e ANSIBLE_INVENTORY=test/integration/inventory.yaml \
 		$(TEST_IMAGE) bash -c \
-			'ansible -m metal_stack_release_vector localhost && ansible-playbook test/integration/playbook.yaml -v'
+			'ansible -m metal_stack_release_vector localhost -vvv && ansible-playbook test/integration/playbook.yaml -vvv'
 	docker stop ansible-common-test-registry
 
 .PHONY: test-local

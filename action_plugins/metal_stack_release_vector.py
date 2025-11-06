@@ -51,6 +51,60 @@ class ActionModule(ActionBase):
         self._task.args.setdefault('vectors', task_vars.get(
             'metal_stack_release_vectors', None))
 
+        validation_result, task_args = self._validate_module_args()
+        result = dict()
+
+        if validation_result.error_messages:
+            result["failed"] = True
+            result["msg"] = str(validation_result.error_messages)
+            return result
+
+        self._supports_check_mode = True
+
+        if task_args.get('cache') and os.path.isfile(self._cache_file_path()):
+            result["changed"] = False
+            with open(self._cache_file_path(), 'r') as vector:
+                result["ansible_facts"] = json.load(vector)
+            display.vvv("- Returning cache from %s" % self._cache_file_path)
+            return result
+
+        result["changed"] = False
+        ansible_facts = {}
+
+        for vector in task_args.get('vectors'):
+            try:
+                data = RemoteResolver(
+                    module=self, task_vars=task_vars, task_args=vector).resolve()
+            except Exception as e:
+                result["failed"] = True
+                result["msg"] = "error resolving yaml"
+                result["error"] = to_native(e)
+                result["traceback"] = format_exc()
+                return result
+
+            for k, v in data.items():
+                if task_vars.get(k) is not None:
+                    # skip if already defined, this allows users to provide overwrites
+                    continue
+
+                if ansible_facts.get(k) is not None:
+                    display.warning(
+                        "variable %s was resolved more than once, using first defined value (%s)" % (k, ansible_facts.get(k)))
+                    continue
+
+                ansible_facts[k] = v
+
+        result["ansible_facts"] = ansible_facts
+
+        if task_args.get('cache'):
+            with open(self._cache_file_path(), 'w') as vector:
+                vector.write(json.dumps(ansible_facts))
+                display.vvv("- Written cache file to %s" %
+                            self._cache_file_path)
+
+        return result
+
+    def _validate_module_args(self):
         common_vectors_argument_spec = dict(
             variable_mapping_path=dict(type='str', required=False),
             include_role_defaults=dict(type='str', required=False),
@@ -92,65 +146,12 @@ class ActionModule(ActionBase):
         )
         vectors_options.update(common_vectors_argument_spec)
 
-        validation_result, task_args = self.validate_argument_spec(
+        return self.validate_argument_spec(
             argument_spec=dict(
                 cache=dict(type='bool', required=False, default=True),
                 vectors=dict(type='list', elements='dict',
                              required=False, default=list(), options=vectors_options),
             ))
-
-        if validation_result.error_messages:
-            result["failed"] = True
-            result["msg"] = str(validation_result.error_messages)
-            return result
-
-        self._supports_check_mode = True
-
-        result = dict()
-        vectors = task_args.get('vectors')
-
-        if task_args.get('cache') and os.path.isfile(self._cache_file_path()):
-            result["changed"] = False
-            with open(self._cache_file_path(), 'r') as vector:
-                result["ansible_facts"] = json.load(vector)
-            display.vvv("- Returning cache from %s" % self._cache_file_path)
-            return result
-
-        result["changed"] = False
-        ansible_facts = {}
-
-        for vector in vectors:
-            try:
-                data = RemoteResolver(
-                    module=self, task_vars=task_vars, task_args=vector).resolve()
-            except Exception as e:
-                result["failed"] = True
-                result["msg"] = "error resolving yaml"
-                result["error"] = to_native(e)
-                result["traceback"] = format_exc()
-                return result
-
-            for k, v in data.items():
-                if task_vars.get(k) is not None:
-                    # skip if already defined, this allows users to provide overwrites
-                    continue
-
-                if ansible_facts.get(k) is not None:
-                    display.warning(
-                        "variable %s was resolved more than once, using first defined value (%s)" % (k, ansible_facts.get(k)))
-                    continue
-
-                ansible_facts[k] = v
-
-        result["ansible_facts"] = ansible_facts
-
-        if task_args.get('cache'):
-            with open(self._cache_file_path(), 'w') as vector:
-                vector.write(json.dumps(ansible_facts))
-                display.vvv("- Written cache file to %s" %
-                            self._cache_file_path)
-
-        return result
 
     @staticmethod
     def _cache_file_path():
@@ -318,24 +319,20 @@ class RemoteResolver():
                 OciLoader(url=role_ref + ":" + role_version,
                           tar_dest=os.path.dirname(role_path), dest_filter=prefix_filter, **kwargs).load()
             else:
-                try:
-                    module_result = self._module._execute_module(module_name='ansible.builtin.git', module_args={
-                        'repo': role_repository,
-                        'dest': role_path,
-                        'depth': 1,
-                        'version': role_version,
-                    }, task_vars=self._task_vars, tmp=None)
+                module_result = self._module._execute_module(module_name='ansible.builtin.git', module_args={
+                    'repo': role_repository,
+                    'dest': role_path,
+                    'depth': 1,
+                    'version': role_version,
+                }, task_vars=self._task_vars, tmp=None)
 
-                    if module_result.get('failed'):
-                        msg = module_result.get('module_stderr')
-                        if not msg:
-                            msg = module_result.get('module_stdout')
-                        if not msg:
-                            msg = module_result.get('msg')
-                        raise AnsibleError(msg)
-                except Exception as e:
-                    raise Exception(
-                        "error cloning git repository: %s" % to_native(e))
+                if module_result.get('failed'):
+                    msg = module_result.get('module_stderr')
+                    if not msg:
+                        msg = module_result.get('module_stdout')
+                    if not msg:
+                        msg = module_result.get('msg')
+                    raise AnsibleError(msg)
 
     def _load_role_default_vars(self):
         defaults = dict()

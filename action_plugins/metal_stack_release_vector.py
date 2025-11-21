@@ -448,27 +448,32 @@ class OciLoader():
             raise ImportError(
                 "opencontainers must be installed in order to resolve metal-stack oci release vectors")
 
-        try:
-            bin_path = process.get_bin_path(
-                "cosign", required=True, opt_dirs=None)
+        if self._cosign_key or self._cosign_identity or self._cosign_issuer:
+            try:
+                bin_path = process.get_bin_path(
+                    "cosign", required=True, opt_dirs=None)
 
-            if self._cosign_key:
-                subprocess.run(args=[bin_path, "verify", "--key", "env://PUBKEY", self._url],
-                               env=dict(PUBKEY=self._cosign_key), check=True, capture_output=True)
-                display.display(
-                    "- %s was verified successfully by public key through cosign" % self._url, color=C.COLOR_OK)
-            elif self._cosign_identity or self._cosign_issuer:
-                subprocess.run(args=[bin_path, "verify", "--certificate-oidc-issuer", self._cosign_issuer,
-                                     "--certificate-identity", self._cosign_identity, self._url],
-                               check=True, capture_output=True)
-                display.display(
-                    "- %s was verified successfully by oidc-issuer through cosign" % self._url, color=C.COLOR_OK)
-        except ValueError as e:
-            raise FileNotFoundError("cosign needs to be installed: %s" %
-                                    to_native(e.message)) from e
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError("cosign verification returned with exit code %s: %s" % (
-                e.returncode, to_native(e.stderr))) from e
+                if self._username and self._password:
+                    subprocess.run(args=[bin_path, "login", "--username",  self._username, "--password-stdin=true"],
+                                   input=self._password, check=True, capture_output=True)
+
+                if self._cosign_key:
+                    subprocess.run(args=[bin_path, "verify", "--key", "env://PUBKEY", self._url],
+                                   env=dict(PUBKEY=self._cosign_key), check=True, capture_output=True)
+                    display.display(
+                        "- %s was verified successfully by public key through cosign" % self._url, color=C.COLOR_OK)
+                elif self._cosign_identity or self._cosign_issuer:
+                    subprocess.run(args=[bin_path, "verify", "--certificate-oidc-issuer", self._cosign_issuer,
+                                         "--certificate-identity", self._cosign_identity, self._url],
+                                   check=True, capture_output=True)
+                    display.display(
+                        "- %s was verified successfully by oidc-issuer through cosign" % self._url, color=C.COLOR_OK)
+            except ValueError as e:
+                raise FileNotFoundError("cosign needs to be installed: %s" %
+                                        to_native(e.message)) from e
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError("cosign verification returned with exit code %s: %s" % (
+                    e.returncode, to_native(e.stderr))) from e
 
         blob = self._download_blob()
 

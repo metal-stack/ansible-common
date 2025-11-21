@@ -1,6 +1,12 @@
 #!/bin/bash
 set -eo pipefail
 
+echo "wait until registry is available"
+
+while ! curl localhost:5000; do
+  sleep 1
+done
+
 echo "fill registry with sample release vectors and roles"
 
 cd testdata/vectors/simple

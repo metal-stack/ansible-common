@@ -59,6 +59,11 @@ class ActionModule(ActionBase):
             result["msg"] = str(validation_result.error_messages)
             return result
 
+        # as we can pick up the module inputs from task_vars,
+        # we have to run this through the templar to allow using
+        # variables in the module inputs
+        task_args = self._templar.template(task_args)
+
         self._supports_check_mode = True
 
         if task_args.get('cache') and os.path.isfile(self._cache_file_path()):
@@ -167,7 +172,7 @@ class RemoteResolver():
 
         task_args = task_args.copy()
 
-        self._url = module._templar.template(task_args.pop("url", None))
+        self._url = task_args.pop("url", None)
         if not self._url:
             raise ValueError("url is required")
 

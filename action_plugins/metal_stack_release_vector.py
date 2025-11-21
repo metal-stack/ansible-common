@@ -169,7 +169,7 @@ class RemoteResolver():
 
         self._url = module._templar.template(task_args.pop("url", None))
         if not self._url:
-            raise Exception("url is required")
+            raise ValueError("url is required")
 
         self._mapping_path = task_args.pop("variable_mapping_path", None)
         self._replacements = task_args.pop("replace", self._task_vars.get(
@@ -200,8 +200,8 @@ class RemoteResolver():
         )
 
         if task_args:
-            raise Exception("unknown parameters used for %s: %s" %
-                            (self._url, task_args.keys()))
+            raise ValueError("unknown parameters used for %s: %s" %
+                             (self._url, task_args.keys()))
 
     def resolve(self):
         # download release vector
@@ -210,7 +210,7 @@ class RemoteResolver():
         # apply replacements
         for r in self._replacements:
             if r.get("key") is None or r.get("old") is None or r.get("new") is None:
-                raise Exception(
+                raise ValueError(
                     "replace must contain and dict with the keys for 'key', 'old' and 'new'")
             self.replace_key_value(content, r.get(
                 "key"), r.get("old"), r.get("new"))
@@ -220,9 +220,9 @@ class RemoteResolver():
             try:
                 role_dict = self.dotted_path(
                     content, self._ansible_roles_path)
-            except KeyError:
-                raise Exception("given ansible-roles path %s not found in %s" %
-                                (self._ansible_roles_path, self._url))
+            except KeyError as e:
+                raise AnsibleError("given ansible-roles path %s not found in %s" %
+                                   (self._ansible_roles_path, self._url)) from e
 
             self._install_ansible_roles(
                 role_dict=role_dict, **self._loader_args)
@@ -235,9 +235,9 @@ class RemoteResolver():
             try:
                 mapping = self.dotted_path(
                     self._task_vars | self._load_role_default_vars(), self._mapping_path)
-            except KeyError:
-                raise Exception(
-                    "no mapping found in any variables at %s" % self._mapping_path)
+            except KeyError as e:
+                raise KeyError(
+                    "no mapping found in any variables at %s" % self._mapping_path) from e
 
             for k, path in mapping.items():
                 try:
@@ -253,13 +253,13 @@ class RemoteResolver():
         for n in self._nested:
             path = n.pop("url_path", None)
             if not path:
-                raise Exception("nested entries must contain an url_path")
+                raise ValueError("nested entries must contain an url_path")
 
             try:
                 n["url"] = self.dotted_path(content, path)
             except KeyError as e:
-                raise Exception(
-                    """url_path "%s" does not exist in %s""" % (path, self._url))
+                raise KeyError(
+                    """url_path "%s" does not exist in %s""" % (path, self._url)) from e
 
             results = RemoteResolver(
                 module=self._module, task_vars=self._task_vars, task_args=n).resolve()
@@ -296,10 +296,10 @@ class RemoteResolver():
                 role_version = role_version_overwrite
 
             if not role_version:
-                raise Exception("no version specified for role " + role_name)
+                raise ValueError("no version specified for role " + role_name)
 
             if not C.DEFAULT_ROLES_PATH:
-                raise Exception("no default roles path configured")
+                raise AnsibleError("no default roles path configured")
             role_path = os.path.join(C.DEFAULT_ROLES_PATH[0], role_name)
 
             if not role_ref and not role_repository:
@@ -432,8 +432,8 @@ class OciLoader():
         self._cosign_key = kwargs.pop("oci_cosign_verify_key", None)
 
         if kwargs:
-            raise Exception("unknown parameters passed to oci loader: %s" %
-                            kwargs.keys())
+            raise ValueError("unknown parameters passed to oci loader: %s" %
+                             kwargs.keys())
 
     def load(self):
         if not HAS_OPENCONTAINERS:
@@ -456,17 +456,17 @@ class OciLoader():
                 display.display(
                     "- %s was verified successfully by oidc-issuer through cosign" % self._url, color=C.COLOR_OK)
         except ValueError as e:
-            raise Exception("cosign needs to be installed: %s" %
-                            to_native(e.message))
+            raise FileNotFoundError("cosign needs to be installed: %s" %
+                                    to_native(e.message)) from e
         except subprocess.CalledProcessError as e:
-            raise Exception("cosign verification returned with exit code %s: %s" % (
-                e.returncode, to_native(e.stderr)))
+            raise RuntimeError("cosign verification returned with exit code %s: %s" % (
+                e.returncode, to_native(e.stderr))) from e
 
         blob, media_type = self._download_blob()
 
         if media_type == self.ANSIBLE_ROLE_MEDIA_TYPE:
             if not self._dest:
-                raise Exception("tar destination must be specified")
+                raise ValueError("tar destination must be specified")
             return self._extract_tar_gzip(blob, dest=self._dest, filter=self._dest_filter)
         else:
             return self._extract_tar_gzip_file(blob, member=self._member)
@@ -491,8 +491,8 @@ class OciLoader():
             response = client.Do(req)
             response.raise_for_status()
         except Exception as e:
-            raise Exception(
-                "the download of the release vector raised an error: %s" % to_native(e))
+            raise RuntimeError(
+                "the download of the release vector raised an error: %s" % to_native(e)) from e
 
         manifest = response.json()
 
@@ -503,7 +503,7 @@ class OciLoader():
                 break
 
         if not target:
-            raise Exception("no layer with media type %s or %s found in oci release vector" % (
+            raise RuntimeError("no layer with media type %s or %s found in oci release vector" % (
                 self.RELEASE_VECTOR_MEDIA_TYPE, self.ANSIBLE_ROLE_MEDIA_TYPE))
 
         req = client.NewRequest(
@@ -518,8 +518,8 @@ class OciLoader():
             blob = client.Do(req)
             blob.raise_for_status()
         except Exception as e:
-            raise Exception(
-                "the download of the release vector layer raised an error: %s" % to_native(e))
+            raise RuntimeError(
+                "the download of the release vector layer raised an error: %s" % to_native(e)) from e
 
         return blob.content, layer["mediaType"]
 
@@ -528,7 +528,7 @@ class OciLoader():
         ref, *tag = full_ref.rsplit(":", maxsplit=1)
         tag = tag[0] if tag else None
         if tag is None:
-            raise Exception("oci ref %s needs to specify a tag" % full_ref)
+            raise ValueError("oci ref %s needs to specify a tag" % full_ref)
         url = urlparse("%s://%s" % (scheme, ref))
         return "%s://%s" % (scheme, url.netloc), url.path.removeprefix('/'), tag
 
@@ -539,8 +539,8 @@ class OciLoader():
                 try:
                     return f.read().decode('utf-8')
                 except Exception as e:
-                    raise Exception(
-                        "error extracting tar member from oci layer: %s" % to_native(e))
+                    raise RuntimeError(
+                        "error extracting tar member from oci layer: %s" % to_native(e)) from e
 
     @staticmethod
     def _extract_tar_gzip(bytes, dest, filter=None):
@@ -549,8 +549,8 @@ class OciLoader():
                 tar.extractall(
                     path=dest, members=tar.getmembers(), filter=filter)
             except Exception as e:
-                raise Exception(
-                    "error extracting tar from oci layer: %s" % to_native(e))
+                raise RuntimeError(
+                    "error extracting tar from oci layer: %s" % to_native(e)) from e
 
     @staticmethod
     def prefix_filter(old: str, new: str):

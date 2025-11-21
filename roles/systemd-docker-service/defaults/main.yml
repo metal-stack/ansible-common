@@ -16,6 +16,7 @@ systemd_service_after: docker.service
 systemd_service_bindsto:
 systemd_service_wantedby: multi-user.target
 systemd_service_wants: docker.service
+systemd_docker_privileged: false
 systemd_docker_image_tag: latest
 
 systemd_docker_log_opt_max_file: 5

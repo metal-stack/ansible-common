@@ -24,6 +24,7 @@ Renders a systemd unit file that runs an application within a docker container.
 | systemd_docker_log_driver         |           | The log driver to use for the container instead of the system default                 |
 | systemd_docker_log_opt_max_file   |           | The maximum amount of log files if applicable                                         |
 | systemd_docker_log_opt_max_size   |           | The maximum log file size if applicable                                               |
+| systemd_docker_privileged         |           | Whether to run the docker container in privileged mode                                |
 | systemd_service_restart_sec       |           | The number of seconds to wait before restarting the systemd service                   |
 | systemd_service_timeout_start_sec |           | The number of seconds to wait before starting the systemd service                     |
 | systemd_service_timeout_stop_sec  |           | The number of seconds to wait for the systemd service to stop                         |

@@ -317,6 +317,7 @@ class RemoteResolver():
 
             if role_ref:
                 OciLoader(url=role_ref + ":" + role_version,
+                          media_type=OciLoader.ANSIBLE_ROLE_MEDIA_TYPE,
                           tar_dest=os.path.dirname(role_path), dest_filter=prefix_filter, **kwargs).load()
             else:
                 module_result = self._module._execute_module(module_name='ansible.builtin.git', module_args={
@@ -420,6 +421,8 @@ class OciLoader():
         self._member = kwargs.pop("tar_member_file_name", "release.yaml")
         self._dest = kwargs.pop("tar_dest", None)
         self._dest_filter = kwargs.pop("dest_filter", None)
+        self._media_type = kwargs.pop(
+            "media_type", OciLoader.RELEASE_VECTOR_MEDIA_TYPE)
         self._registry, self._namespace, self._version = self._parse_oci_ref(
             self._url, scheme=kwargs.pop("oci_registry_scheme", "https"))
         self._username = kwargs.pop("oci_registry_username", None)
@@ -462,9 +465,9 @@ class OciLoader():
             raise RuntimeError("cosign verification returned with exit code %s: %s" % (
                 e.returncode, to_native(e.stderr))) from e
 
-        blob, media_type = self._download_blob()
+        blob = self._download_blob()
 
-        if media_type == self.ANSIBLE_ROLE_MEDIA_TYPE:
+        if self._media_type == OciLoader.ANSIBLE_ROLE_MEDIA_TYPE:
             if not self._dest:
                 raise ValueError("tar destination must be specified")
             return self._extract_tar_gzip(blob, dest=self._dest, filter=self._dest_filter)
@@ -498,13 +501,13 @@ class OciLoader():
 
         target = None
         for layer in manifest["layers"]:
-            if layer["mediaType"] == self.RELEASE_VECTOR_MEDIA_TYPE or layer["mediaType"] == self.ANSIBLE_ROLE_MEDIA_TYPE:
+            if layer["mediaType"] == self._media_type:
                 target = layer
                 break
 
         if not target:
-            raise RuntimeError("no layer with media type %s or %s found in oci release vector" % (
-                self.RELEASE_VECTOR_MEDIA_TYPE, self.ANSIBLE_ROLE_MEDIA_TYPE))
+            raise RuntimeError("no layer with media type %s found in oci artifact %s" % (
+                self._media_type,  self._url))
 
         req = client.NewRequest(
             "GET",
@@ -521,7 +524,7 @@ class OciLoader():
             raise RuntimeError(
                 "the download of the release vector layer raised an error: %s" % to_native(e)) from e
 
-        return blob.content, layer["mediaType"]
+        return blob.content
 
     @staticmethod
     def _parse_oci_ref(full_ref, scheme='https'):

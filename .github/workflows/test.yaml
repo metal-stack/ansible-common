@@ -6,9 +6,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: metalstack/metal-deployment-base:latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Oras
+        uses: oras-project/setup-oras@v1
+
       - name: Test
         run: |
           make test

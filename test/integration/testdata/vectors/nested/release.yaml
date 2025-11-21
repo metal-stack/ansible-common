@@ -1,0 +1,16 @@
+---
+ansible-roles:
+  ansible-test:
+    oci: localhost:5000/ansible-test
+    repository: a-repo
+    version: v1.0.0
+
+docker-images:
+  test:
+    name: ghcr.io/metal-stack/test
+    repository: https://github.com/metal-stack/test
+    tag: v2.0.0
+
+vectors:
+  simple:
+    url: oci://localhost:5000/releases:simple

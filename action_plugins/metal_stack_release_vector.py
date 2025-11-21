@@ -558,8 +558,8 @@ class OciLoader():
     @staticmethod
     def prefix_filter(old: str, new: str):
         def filter(member: tarfile.TarInfo, _: str, /) -> tarfile.TarInfo | None:
-            if member.name.startswith(old):
-                stripped = member.name.removeprefix(old)
-                member.name = new + stripped
+            parts = member.name.split("/")
+            base = parts[0].replace(old, new)
+            member.name = os.path.join(base, *parts[1:])
             return member
         return filter

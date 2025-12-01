@@ -472,7 +472,7 @@ class OciLoader():
 
         try:
             if self._username and self._password:
-                subprocess.run(args=[bin_path, "login", "--username",  self._username, "--password-stdin=true"],
+                subprocess.run(args=[bin_path, "login", self._registry, "--username",  self._username, "--password-stdin=true"],
                                input=self._password.encode(), check=True, capture_output=True)
 
             if self._cosign_key:

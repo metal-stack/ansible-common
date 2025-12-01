@@ -428,8 +428,9 @@ class OciLoader():
         self._dest_filter = kwargs.pop("dest_filter", None)
         self._media_type = kwargs.pop(
             "media_type", OciLoader.RELEASE_VECTOR_MEDIA_TYPE)
+        self._registry_scheme = kwargs.pop("oci_registry_scheme", "https")
         self._registry, self._namespace, self._version = self._parse_oci_ref(
-            self._url, scheme=kwargs.pop("oci_registry_scheme", "https"))
+            self._url, scheme=self._registry_scheme)
         self._username = kwargs.pop("oci_registry_username", None)
         self._password = kwargs.pop("oci_registry_password", None)
 
@@ -497,7 +498,7 @@ class OciLoader():
             opts.append(WithUsernamePassword(
                 username=self._username, password=self._password))
 
-        client = NewClient(self._registry,
+        client = NewClient("%s://%s" % (self._registry_scheme, self._registry),
                            *opts
                            )
 
@@ -550,7 +551,7 @@ class OciLoader():
         if tag is None:
             raise ValueError("oci ref %s needs to specify a tag" % full_ref)
         url = urlparse("%s://%s" % (scheme, ref))
-        return "%s://%s" % (scheme, url.netloc), url.path.removeprefix('/'), tag
+        return url.netloc, url.path.removeprefix('/'), tag
 
     @staticmethod
     def _extract_tar_gzip_file(bytes, member):

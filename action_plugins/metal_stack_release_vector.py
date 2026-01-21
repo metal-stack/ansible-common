@@ -11,6 +11,7 @@ from io import BytesIO
 from yaml import safe_load
 from urllib.parse import urlparse
 from traceback import format_exc
+from dataclasses import dataclass
 
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase
@@ -125,8 +126,11 @@ class ActionModule(ActionBase):
                 old=dict(type='str', required=True),
                 new=dict(type='str', required=True),
             )),
-            oci_registry_username=dict(type='str', required=False),
-            oci_registry_password=dict(type='str', required=False),
+            oci_registry_credentials=dict(type='list', elements='dict', required=False, default=list(), options=dict(
+                name=dict(type='str', required=True),
+                username=dict(type='str', required=True),
+                password=dict(type='str', required=True),
+            )),
             oci_registry_scheme=dict(
                 type='str', required=False, default='https'),
             oci_cosign_verify_certificate_identity=dict(
@@ -190,10 +194,8 @@ class RemoteResolver():
             'ansible_roles_path', "ansible-roles")
 
         self._loader_args = dict(
-            oci_registry_username=task_args.pop(
-                "oci_registry_username", None),
-            oci_registry_password=task_args.pop(
-                "oci_registry_password", None),
+            oci_registry_credentials=task_args.pop(
+                "oci_registry_credentials", None),
             oci_registry_scheme=task_args.pop(
                 "oci_registry_scheme", 'https'),
             oci_cosign_verify_certificate_identity=task_args.pop(
@@ -431,8 +433,13 @@ class OciLoader():
         self._registry_scheme = kwargs.pop("oci_registry_scheme", "https")
         self._registry, self._namespace, self._version = self._parse_oci_ref(
             self._url, scheme=self._registry_scheme)
-        self._username = kwargs.pop("oci_registry_username", None)
-        self._password = kwargs.pop("oci_registry_password", None)
+
+        self._registry_credentials = dict[str, RegistryCredential]()
+        for credentials in kwargs.pop("oci_registry_credentials", list()):
+            self._registry_credentials[credentials.get("name")] = RegistryCredential(
+                user=credentials.get("username"),
+                password=credentials.get("password")
+            )
 
         self._cosign_identity = kwargs.pop(
             "oci_cosign_verify_certificate_identity", None)
@@ -472,21 +479,25 @@ class OciLoader():
                                     to_native(e.message)) from e
 
         try:
-            if self._username and self._password:
-                subprocess.run(args=[bin_path, "login", self._registry, "--username",  self._username, "--password-stdin=true"],
-                               input=self._password.encode(), check=True, capture_output=True)
+            env = dict()
+            args = [bin_path, "verify"]
+
+            if self._registry_credentials.get(self._registry, None):
+                creds = self._registry_credentials.get(self._registry)
+                args += ["--registry-username", creds.user]
+                env["COSIGN_REGISTRY_PASSWORD"] = creds.password
 
             if self._cosign_key:
-                subprocess.run(args=[bin_path, "verify", "--key", "env://PUBKEY", self._url],
-                               env=dict(PUBKEY=self._cosign_key), check=True, capture_output=True)
-                display.display(
-                    "- %s was verified successfully by public key through cosign" % self._url, color=C.COLOR_OK)
+                args += ["--key", "env://PUBKEY", self._url]
+                env["PUBKEY"] = self._cosign_key
+
             elif self._cosign_identity or self._cosign_issuer:
-                subprocess.run(args=[bin_path, "verify", "--certificate-oidc-issuer", self._cosign_issuer,
-                                     "--certificate-identity", self._cosign_identity, self._url],
-                               check=True, capture_output=True)
-                display.display(
-                    "- %s was verified successfully by oidc-issuer through cosign" % self._url, color=C.COLOR_OK)
+                args += ["--certificate-oidc-issuer", self._cosign_issuer,
+                         "--certificate-identity", self._cosign_identity, self._url]
+
+            subprocess.run(args=args, env=env, check=True, capture_output=True)
+            display.display(
+                "- %s was verified successfully by oidc-issuer through cosign" % self._url, color=C.COLOR_OK)
 
         except subprocess.CalledProcessError as e:
             raise RuntimeError("cosign verification returned with exit code %s: %s" % (
@@ -494,9 +505,11 @@ class OciLoader():
 
     def _download_blob(self):
         opts = [WithDefaultName(self._namespace)]
-        if self._username and self._password:
+
+        if self._registry_credentials.get(self._registry, None):
+            creds = self._registry_credentials.get(self._registry)
             opts.append(WithUsernamePassword(
-                username=self._username, password=self._password))
+                username=creds.user, password=creds.password))
 
         client = NewClient("%s://%s" % (self._registry_scheme, self._registry),
                            *opts
@@ -581,3 +594,9 @@ class OciLoader():
             member.name = os.path.join(base, *parts[1:])
             return member
         return filter
+
+
+@dataclass
+class RegistryCredential:
+    user: str
+    password: str

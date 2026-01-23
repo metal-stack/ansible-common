@@ -195,7 +195,7 @@ class RemoteResolver():
 
         self._loader_args = dict(
             oci_registry_credentials=task_args.pop(
-                "oci_registry_credentials", None),
+                "oci_registry_credentials", list()),
             oci_registry_scheme=task_args.pop(
                 "oci_registry_scheme", 'https'),
             oci_cosign_verify_certificate_identity=task_args.pop(
@@ -467,7 +467,7 @@ class OciLoader():
         else:
             return self._extract_tar_gzip_file(blob, member=self._member)
 
-    def _cosign_validate(self):
+    def _cosign_validate(self) -> None:
         if not self._cosign_key and not (self._cosign_identity and self._cosign_issuer):
             return
 
@@ -478,30 +478,30 @@ class OciLoader():
             raise FileNotFoundError("cosign needs to be installed: %s" %
                                     to_native(e.message)) from e
 
+        env = dict()
+        args = [bin_path, "verify"]
+
+        if self._registry_credentials.get(self._registry, None):
+            creds = self._registry_credentials.get(self._registry)
+            args += ["--registry-username", creds.user]
+            env["COSIGN_REGISTRY_PASSWORD"] = creds.password
+
+        if self._cosign_key:
+            args += ["--key", "env://PUBKEY", self._url]
+            env["PUBKEY"] = self._cosign_key
+
+        elif self._cosign_identity or self._cosign_issuer:
+            args += ["--certificate-oidc-issuer", self._cosign_issuer,
+                     "--certificate-identity", self._cosign_identity, self._url]
+
         try:
-            env = dict()
-            args = [bin_path, "verify"]
-
-            if self._registry_credentials.get(self._registry, None):
-                creds = self._registry_credentials.get(self._registry)
-                args += ["--registry-username", creds.user]
-                env["COSIGN_REGISTRY_PASSWORD"] = creds.password
-
-            if self._cosign_key:
-                args += ["--key", "env://PUBKEY", self._url]
-                env["PUBKEY"] = self._cosign_key
-
-            elif self._cosign_identity or self._cosign_issuer:
-                args += ["--certificate-oidc-issuer", self._cosign_issuer,
-                         "--certificate-identity", self._cosign_identity, self._url]
-
             subprocess.run(args=args, env=env, check=True, capture_output=True)
-            display.display(
-                "- %s was verified successfully by oidc-issuer through cosign" % self._url, color=C.COLOR_OK)
-
         except subprocess.CalledProcessError as e:
             raise RuntimeError("cosign verification returned with exit code %s: %s" % (
                 e.returncode, to_native(e.stderr))) from e
+
+        display.display(
+            "- %s was verified successfully through cosign" % self._url, color=C.COLOR_OK)
 
     def _download_blob(self):
         opts = [WithDefaultName(self._namespace)]

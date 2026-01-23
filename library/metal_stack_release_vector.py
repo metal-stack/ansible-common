@@ -119,17 +119,28 @@ options:
                             - The value to replace the value specified by the old option with.
                         required: true
                         type: str
-            oci_registry_username:
+            oci_registry_credentials:
                 description:
-                    - The username to authenticate against the OCI registry.
+                    - Provides OCI registry credentials for different registries.
                 required: false
-                type: str
-            oci_registry_password:
-                description:
-                description:
-                    - The password to authenticate against the OCI registry.
-                required: false
-                type: str
+                type: list
+                elements: dict
+                suboptions:
+                    name:
+                        description:
+                            - The name of the registry.
+                        required: true
+                        type: str
+                    username:
+                        description:
+                            - The username to authenticate against the OCI registry.
+                        required: true
+                        type: str
+                    password:
+                        description:
+                            - The password to authenticate against the OCI registry.
+                        required: true
+                        type: str
             oci_registry_scheme:
                 description:
                     - The scheme to communicate with the OCI registry.

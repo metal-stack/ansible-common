@@ -42,12 +42,14 @@ def transpile_ignition_config(ignition_config):
     except ValueError as e:
         raise AnsibleFilterError("ct needs to be installed: %s" % e.message)
 
-    process = subprocess.Popen(["ct"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+    process = subprocess.Popen(
+        ["ct"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
     out, err = process.communicate(input=_encode(ignition_config))
     return_code = process.returncode
 
     if return_code != 0:
-        raise AnsibleFilterError("transpilation failed with return code %d: %s (%s)" % (return_code, out, err))
+        raise AnsibleFilterError(
+            "transpilation failed with return code %d: %s (%s)" % (return_code, out, err))
 
     return _decode(out.strip())
 
@@ -85,7 +87,8 @@ def _extract_peer_address(host, k8s_nodes):
             net = ipaddress.ip_network(cidr)
             gen = net.hosts()
             return str(next(gen))
-    raise AnsibleFilterError("could not find host in k8s nodes and determine peer address: %s", host)
+    raise AnsibleFilterError(
+        "could not find host in k8s nodes and determine peer address: %s", host)
 
 
 def metal_lb_conf(hostnames, hostvars, cidrs, k8s_nodes):
@@ -103,13 +106,16 @@ def metal_lb_conf(hostnames, hostvars, cidrs, k8s_nodes):
 
         asn = _extract_asn(host_vars['metal_tags'])
         if not asn:
-            raise AnsibleFilterError("host has no asn specified in its metal_tags: %s", host)
+            raise AnsibleFilterError(
+                "host has no asn specified in its metal_tags: %s", host)
 
         p = dict()
-        p['peer-address'] = _extract_peer_address(host_vars['metal_hostname'], k8s_nodes)
+        p['peer-address'] = _extract_peer_address(
+            host_vars['metal_hostname'], k8s_nodes)
         p['peer-asn'] = int(asn)
         p['my-asn'] = int(asn)
-        p['node-selectors'] = _generate_node_selectors(host_vars['metal_hostname'])
+        p['node-selectors'] = _generate_node_selectors(
+            host_vars['metal_hostname'])
         peers.append(p)
 
     address_pool = dict()
@@ -124,6 +130,12 @@ def metal_lb_conf(hostnames, hostvars, cidrs, k8s_nodes):
     }
 
 
+def list_wrap(value, no_wrap_if_already_list=True):
+    if no_wrap_if_already_list and isinstance(value, list):
+        return value
+    return [value]
+
+
 class FilterModule(object):
     '''Common cloud-native filter plugins'''
 
@@ -132,4 +144,5 @@ class FilterModule(object):
             'humanfriendly': parse_size,
             'transpile_ignition_config': transpile_ignition_config,
             'metal_lb_conf': metal_lb_conf,
+            'list_wrap': list_wrap,
         }

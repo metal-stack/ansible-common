@@ -43,6 +43,9 @@ ExecStart=/usr/bin/docker run --name=%n \
     --log-opt max-file={{ systemd_docker_log_opt_max_file }} \
     --log-opt max-size={{ systemd_docker_log_opt_max_size }} \
 {% endif %}
+{% for secopt in systemd_docker_security_opts %}
+    --security-opt {{ secopt }} \
+{% endfor %}
 {% if systemd_docker_network %}
     --network {{ systemd_docker_network }} \
 {% endif %}

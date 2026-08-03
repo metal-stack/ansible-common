@@ -479,6 +479,7 @@ class OciLoader():
                                     to_native(e.message)) from e
 
         env = os.environ.copy()
+        print(env)
         args = [bin_path, "verify"]
 
         if self._registry_credentials.get(self._registry, None):

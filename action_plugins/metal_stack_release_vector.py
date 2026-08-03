@@ -479,7 +479,6 @@ class OciLoader():
                                     to_native(e.message)) from e
 
         env = os.environ.copy()
-        display.display ("current env: %s" % env, color=C.COLOR_OK)
         
         args = [bin_path, "verify"]
 

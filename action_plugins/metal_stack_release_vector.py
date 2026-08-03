@@ -478,7 +478,7 @@ class OciLoader():
             raise FileNotFoundError("cosign needs to be installed: %s" %
                                     to_native(e.message)) from e
 
-        env = dict()
+        env = os.environ.copy()
         args = [bin_path, "verify"]
 
         if self._registry_credentials.get(self._registry, None):

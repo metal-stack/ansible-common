@@ -1,4 +1,4 @@
-name: Publish OCI Artifact
+name: metal-stack component release
 
 on:
   pull_request:

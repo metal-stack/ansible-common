@@ -9,6 +9,9 @@ Wants={{ systemd_service_wants }}
 [Service]
 ExecStartPre=-/usr/bin/docker rm --force --volumes %n
 ExecStart=/usr/bin/docker run --name=%n \
+{% if systemd_docker_hostname %}
+    --hostname {{ systemd_docker_hostname }} \
+{% endif %}
 {% for key, value in systemd_service_environment.items() %}
     --env "{{ key }}={{ value }}" \
 {% endfor %}

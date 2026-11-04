@@ -41,9 +41,7 @@ def shoot_admin_kubeconfig(kubeconfig, project_namespace, shoot_name, expiry_sec
 def machine_images_for_cloud_profile(image_list, cris=None, compatibilities=None):
     images = dict()
     for image in image_list:
-        features = image.get("features", list())
-
-        if not any(feature in features for feature in ['machine', 'IMAGE_FEATURE_MACHINE']):
+        if not any(feature in image.get("features", list()) for feature in ['machine', 'IMAGE_FEATURE_MACHINE']):
             continue
 
         if image.get('omit_from_cloud_profile', False):

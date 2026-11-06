@@ -23,7 +23,7 @@ def shoot_admin_kubeconfig(kubeconfig, project_namespace, shoot_name, expiry_sec
         'apiVersion': 'authentication.gardener.cloud/v1alpha1',
         'kind': 'AdminKubeconfigRequest',
         'spec': {
-        'expirationSeconds': expiry_seconds
+            'expirationSeconds': expiry_seconds
         }
     }
 
@@ -33,7 +33,7 @@ def shoot_admin_kubeconfig(kubeconfig, project_namespace, shoot_name, expiry_sec
                             auth_settings=['BearerToken'],
                             _preload_content=False,
                             _return_http_data_only=True,
-                        )
+                            )
 
     return base64.b64decode(json.loads(response.data)["status"]["kubeconfig"]).decode('utf-8')
 
@@ -41,7 +41,7 @@ def shoot_admin_kubeconfig(kubeconfig, project_namespace, shoot_name, expiry_sec
 def machine_images_for_cloud_profile(image_list, cris=None, compatibilities=None):
     images = dict()
     for image in image_list:
-        if 'machine' not in image.get("features", list()):
+        if not any(feature in image.get("features", list()) for feature in ['machine', 'IMAGE_FEATURE_MACHINE']):
             continue
 
         if image.get('omit_from_cloud_profile', False):

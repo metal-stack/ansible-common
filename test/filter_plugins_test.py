@@ -19,6 +19,7 @@ class UtilsFilterTest(unittest.TestCase):
         for expected_filter in ["extract_gcp_node_network"]:
             self.assertIn(expected_filter, gcp.FilterModule().filters())
 
+
 class HumanfriendlyTest(unittest.TestCase):
     def test_parsing_size(self):
         actual = common.parse_size("1MB", binary=False)
@@ -93,8 +94,19 @@ class CloudProfileImageTest(unittest.TestCase):
           omit_from_cloud_profile: yes
           features:
               - machine
+        # v2 images
+        - id: ubuntu-26.4
+          meta:
+              labels: {}
+          url: https://images.metal-stack.io/metal-os/stable/ubuntu/26.04/img.tar.lz4
+          name: Ubuntu 26.04
+          description: Ubuntu 26.04 Latest Release
+          features:
+              - IMAGE_FEATURE_MACHINE
+          classification: IMAGE_CLASSIFICATION_PREVIEW
         """
-        actual = gardener.machine_images_for_cloud_profile(yaml.safe_load(sample_data))
+        actual = gardener.machine_images_for_cloud_profile(
+            yaml.safe_load(sample_data))
         expected = [
             {
                 "name": "firewall-ubuntu",
@@ -111,6 +123,7 @@ class CloudProfileImageTest(unittest.TestCase):
                     {"version": "19.10.20200701"},
                     {"version": "20.04"},
                     {"version": "20.04.20200331"},
+                    {"version": "26.4"},
                 ],
             },
             {
@@ -180,7 +193,8 @@ class CloudProfileImageTest(unittest.TestCase):
             }
         }
 
-        actual = gardener.machine_images_for_cloud_profile(yaml.safe_load(sample_data), cris=cri_mapping)
+        actual = gardener.machine_images_for_cloud_profile(
+            yaml.safe_load(sample_data), cris=cri_mapping)
         expected = [
             {
                 "name": "firewall-ubuntu",
@@ -225,7 +239,6 @@ class CloudProfileImageTest(unittest.TestCase):
 
         self.assertListEqual(actual, expected)
 
-
     def test_image_list_with_compatibility_mapping(self):
         self.maxDiff = None
 
@@ -255,7 +268,8 @@ class CloudProfileImageTest(unittest.TestCase):
             }
         }
 
-        actual = gardener.machine_images_for_cloud_profile(yaml.safe_load(sample_data), compatibilities=compat_mapping)
+        actual = gardener.machine_images_for_cloud_profile(
+            yaml.safe_load(sample_data), compatibilities=compat_mapping)
         expected = [
             {
                 "name": "debian",

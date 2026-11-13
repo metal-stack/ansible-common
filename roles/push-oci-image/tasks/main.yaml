@@ -1,0 +1,72 @@
+---
+- name: Check mandatory variables for this role are set
+  ansible.builtin.assert:
+    fail_msg: "not all mandatory variables given, check role documentation"
+    quiet: true
+    that:
+      - push_oci_image_name is defined and push_oci_image_name | length > 0
+      - push_oci_image_tag is defined and push_oci_image_tag | length > 0
+
+- name: Determine platform of the target
+  ansible.builtin.command: docker version --format '{{ "{{.Server.Os}}/{{.Server.Arch}}" }}'
+  register: push_oci_image_target_platform
+  changed_when: false
+  when: push_oci_image_platform | length == 0
+
+- name: Push image to target
+  vars:
+    push_oci_image_effective_platform: "{{ push_oci_image_platform if push_oci_image_platform | length > 0 else push_oci_image_target_platform.stdout }}"
+  block:
+    - name: Create temporary tarball on the controller
+      ansible.builtin.tempfile:
+        suffix: .tar
+      register: push_oci_image_controller_tarball
+      delegate_to: localhost
+      become: false
+
+    - name: Create temporary tarball on target
+      ansible.builtin.tempfile:
+        suffix: .tar
+      register: push_oci_image_target_tarball
+
+    - name: Pull image on the controller
+      community.docker.docker_image_pull:
+        name: "{{ push_oci_image_name }}"
+        tag: "{{ push_oci_image_tag }}"
+        platform: "{{ push_oci_image_effective_platform }}"
+      delegate_to: localhost
+      become: false
+      when: not push_oci_image_skip_pull
+
+    - name: Export image on the controller
+      community.docker.docker_image_export:
+        names: "{{ push_oci_image_name }}:{{ push_oci_image_tag }}"
+        path: "{{ push_oci_image_controller_tarball.path }}"
+        platform: "{{ push_oci_image_effective_platform }}"
+      delegate_to: localhost
+      become: false
+
+    - name: Copy tarball to target
+      ansible.builtin.copy:
+        src: "{{ push_oci_image_controller_tarball.path }}"
+        dest: "{{ push_oci_image_target_tarball.path }}"
+        mode: "0600"
+
+    - name: Load image on target
+      community.docker.docker_image_load:
+        path: "{{ push_oci_image_target_tarball.path }}"
+
+  always:
+    - name: Remove tarball from target
+      ansible.builtin.file:
+        path: "{{ push_oci_image_target_tarball.path }}"
+        state: absent
+      when: push_oci_image_target_tarball.path is defined
+
+    - name: Remove tarball from the controller
+      ansible.builtin.file:
+        path: "{{ push_oci_image_controller_tarball.path }}"
+        state: absent
+      delegate_to: localhost
+      become: false
+      when: push_oci_image_controller_tarball.path is defined

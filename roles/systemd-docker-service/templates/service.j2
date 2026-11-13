@@ -52,6 +52,9 @@ ExecStart=/usr/bin/docker run --name=%n \
 {% if systemd_docker_network %}
     --network {{ systemd_docker_network }} \
 {% endif %}
+{% if systemd_docker_entrypoint %}
+    --entrypoint {{ systemd_docker_entrypoint }} \
+{% endif %}
 {% for dns in systemd_docker_dns %}
     --dns {{ dns }} \
 {% endfor %}

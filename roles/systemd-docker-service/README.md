@@ -12,7 +12,8 @@ Renders a systemd unit file that runs an application within a docker container.
 | systemd_service_environment       |           | Environment variables to pass through to the docker container                         |
 | systemd_docker_hostname           |           | Container host name                                                                   |
 | systemd_docker_network            |           | The docker network to use                                                             |
-| systemd_docker_command            |           | The command to tun the docker container with                                          |
+| systemd_docker_entrypoint         |           | The entrypoint to run the docker container with                                       |
+| systemd_docker_command            |           | The command to run the docker container with                                          |
 | systemd_docker_volumes            |           | Volumes to mount into the docker container                                            |
 | systemd_docker_dns                |           | DNS server IP addresses to use instead host configuration                             |
 | systemd_docker_cap_add            |           | Additional capabilities of the docker container                                       |

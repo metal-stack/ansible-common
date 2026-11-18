@@ -1,0 +1,143 @@
+---
+argument_specs:
+  main:
+    short_description: Renders a systemd unit file that runs an application within a docker container.
+    options:
+      systemd_service_name:
+        type: str
+        required: true
+        description: The name of the systemd service
+      systemd_docker_image_name:
+        type: str
+        required: true
+        description: The name of the docker image to run
+      systemd_docker_image_tag:
+        type: str
+        default: latest
+        description: The tag of the docker image to run
+      systemd_service_environment:
+        type: dict
+        default: {}
+        description: Environment variables to pass through to the docker container
+      systemd_docker_hostname:
+        type: str
+        description: Container host name
+      systemd_docker_network:
+        type: str
+        description: The docker network to use
+      systemd_docker_entrypoint:
+        type: str
+        description: The entrypoint to run the docker container with
+      systemd_docker_command:
+        type: raw
+        description: The command to run the docker container with, either a string or a list of arguments
+      systemd_docker_volumes:
+        type: list
+        elements: str
+        default: []
+        description: Volumes to mount into the docker container
+      systemd_docker_dns:
+        type: list
+        elements: str
+        default: []
+        description: DNS server IP addresses to use instead host configuration
+      systemd_docker_cap_add:
+        type: list
+        elements: str
+        default: []
+        description: Additional capabilities of the docker container
+      systemd_docker_ports:
+        type: list
+        elements: dict
+        default: []
+        description: Ports of the docker container to expose
+        options:
+          host_port:
+            type: str
+            required: true
+            description: The port on the host
+          target_port:
+            type: str
+            required: true
+            description: The port inside the container
+      systemd_docker_host_to_ip_mapping:
+        type: list
+        elements: dict
+        default: []
+        description: Adds additional hosts to the docker container
+        options:
+          host:
+            type: str
+            required: true
+            description: The host name
+          ip:
+            type: str
+            required: true
+            description: The IP address the host name resolves to
+      systemd_docker_cpus:
+        type: float
+        description: The number of CPUs for the docker container to use
+      systemd_docker_cpu_period:
+        type: int
+        description: The CPU time period for the docker container to use
+      systemd_docker_cpu_quota:
+        type: int
+        description: The number of microseconds per period for the docker container to use
+      systemd_docker_memory:
+        type: str
+        description: The maximum amount of memory for the docker container to use
+      systemd_docker_log_driver:
+        type: str
+        description: The log driver to use for the container instead of the system default
+      systemd_docker_log_opt_max_file:
+        type: int
+        default: 5
+        description: The maximum amount of log files if applicable
+      systemd_docker_log_opt_max_size:
+        type: str
+        default: 4m
+        description: The maximum log file size if applicable
+      systemd_docker_pre_pull:
+        type: bool
+        default: true
+        description: Pulls the image before (re)starting the service
+      systemd_docker_security_opts:
+        type: list
+        elements: str
+        default: []
+        description: Adds --security-opt to the container
+      systemd_service_restart_sec:
+        type: int
+        default: 10
+        description: The number of seconds to wait before restarting the systemd service
+      systemd_service_timeout_start_sec:
+        type: int
+        default: 10
+        description: The number of seconds to wait before starting the systemd service
+      systemd_service_timeout_stop_sec:
+        type: int
+        default: 10
+        description: The number of seconds to wait for the systemd service to stop
+      systemd_service_after:
+        type: str
+        default: docker.service
+        description: The systemd unit after dependencies
+      systemd_service_bindsto:
+        type: str
+        description: The systemd unit bindsto dependencies
+      systemd_service_wantedby:
+        type: str
+        default: multi-user.target
+        description: The systemd install wantedby dependencies
+      systemd_service_wants:
+        type: str
+        default: docker.service
+        description: The systemd unit wants dependencies
+      systemd_start:
+        type: bool
+        default: true
+        description: Starts the systemd service after rendering the template
+      systemd_external_config_changed:
+        type: bool
+        default: false
+        description: Indicates that the systemd should be restarted because external configuration changed

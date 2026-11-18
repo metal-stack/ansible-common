@@ -1,12 +1,4 @@
 ---
-- name: Check mandatory variables for this role are set
-  ansible.builtin.assert:
-    fail_msg: "not all mandatory variables given, check role documentation"
-    quiet: true
-    that:
-      - push_oci_image_name is defined and push_oci_image_name | length > 0
-      - push_oci_image_tag is defined and push_oci_image_tag | length > 0
-
 - name: Determine platform of the target
   ansible.builtin.command: docker version --format '{{ "{{.Server.Os}}/{{.Server.Arch}}" }}'
   register: push_oci_image_target_platform

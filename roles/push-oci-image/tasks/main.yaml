@@ -34,7 +34,6 @@
       community.docker.docker_image_export:
         names: "{{ push_oci_image_name }}:{{ push_oci_image_tag }}"
         path: "{{ push_oci_image_controller_tarball.path }}"
-        platform: "{{ push_oci_image_effective_platform }}"
       delegate_to: localhost
       become: false
 

@@ -16,6 +16,26 @@
   command: docker pull {{ systemd_docker_image_name }}:{{ systemd_docker_image_tag }}
   register: pull_image_result
   changed_when: "'Downloaded newer image' in pull_image_result.stdout"
+  when:
+    - systemd_docker_pre_pull | bool
+
+- name: inspect running container of service {{ systemd_service_name }}
+  community.docker.docker_container_info:
+    name: "{{ systemd_service_name }}.service"
+  register: container_inspect_result
+
+- name: inspect local docker image
+  community.docker.docker_image_info:
+    name: "{{ systemd_docker_image_name }}:{{ systemd_docker_image_tag }}"
+  register: image_inspect_result
+
+- name: check if the running container uses an outdated image
+  set_fact:
+    # always set, as facts persist across multiple invocations of this role
+    systemd_docker_image_changed: >-
+      {{ container_inspect_result.exists and
+          image_inspect_result.images | length > 0 and
+          container_inspect_result.container.Image != image_inspect_result.images[0].Id }}
 
 - name: start service {{ systemd_service_name }}
   systemd:
@@ -23,7 +43,7 @@
     state: restarted
     enabled: yes
   when:
-    - service_unit_result is changed or pull_image_result is changed or systemd_external_config_changed | bool
+    - service_unit_result is changed or systemd_docker_image_changed | bool or systemd_external_config_changed | bool
     - systemd_start | bool
   register: service_restart_result
   until: service_restart_result is success

@@ -1,0 +1,3 @@
+---
+push_oci_image_skip_pull: false
+push_oci_image_platform: ""

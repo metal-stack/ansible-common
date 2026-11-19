@@ -53,6 +53,7 @@ if __name__ == '__main__':
     switch_os = "unknown"
     is_sonic = False
     is_cumulus = False
+    is_bisdn = False
 
     if os.path.isfile("/etc/sonic/sonic_version.yml"):
         switch_os = "sonic"
@@ -60,12 +61,16 @@ if __name__ == '__main__':
     elif file_contains("/etc/os-release", "Cumulus Linux"):
         switch_os = "cumulus"
         is_cumulus = True
+    elif file_contains("/etc/os-release", "ID=bisdn-linux"):
+        switch_os = "bisdn"
+        is_bisdn = True
 
     result = dict(
         ansible_facts=dict(
             metal_stack_switch_os_name=switch_os,
             metal_stack_switch_os_is_sonic=is_sonic,
             metal_stack_switch_os_is_cumulus=is_cumulus,
+            metal_stack_switch_os_is_bisdn=is_bisdn,
         )
     )
 

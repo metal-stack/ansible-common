@@ -12,7 +12,6 @@ try:
 except ImportError:
     VariableLayer = None
 from ansible.module_utils.common.text.converters import to_native
-from ansible.module_utils.six import PY3
 
 from kubernetes import client, config, dynamic
 from kubernetes.client.rest import ApiException
@@ -33,10 +32,7 @@ except ImportError:
 
 
 def b64decode(source):
-    content = base64.b64decode(source)
-    if PY3:
-        content = content.decode('utf-8')
-    return content
+    return base64.b64decode(source).decode('utf-8')
 
 
 class ActionModule(ActionBase):

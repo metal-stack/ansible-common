@@ -11,7 +11,7 @@ from yaml import safe_load
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase
 from ansible.module_utils.parsing.convert_bool import boolean
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 try:
     from __main__ import display
@@ -85,10 +85,13 @@ class ActionModule(ActionBase):
             recursive = f.get("recursive", True)
             replace = f.get("replace", [])
             var = self._templar.template(f.get("meta_var"))
-            mapping = f.get("mapping", task_vars.get(var, dict()).get("mapping"))
-            nested = f.get("nested", task_vars.get(var, dict()).get("nested", list())) if recursive else list()
+            mapping = f.get("mapping", task_vars.get(
+                var, dict()).get("mapping"))
+            nested = f.get("nested", task_vars.get(var, dict()).get(
+                "nested", list())) if recursive else list()
 
-            result = self.resolve(url, replace, mapping, nested, task_vars, result)
+            result = self.resolve(url, replace, mapping,
+                                  nested, task_vars, result)
             if result.get("failed"):
                 return result
 
@@ -122,14 +125,17 @@ class ActionModule(ActionBase):
                 result["msg"] = "replace must contain and dict with the keys for 'key', 'old' and 'new'"
                 result["failed"] = True
                 return result
-            ActionModule.replace_key_value(f, r.get("key"), r.get("old"), r.get("new"))
+            ActionModule.replace_key_value(
+                f, r.get("key"), r.get("old"), r.get("new"))
 
         for n in nested:
             url_path = self._templar.template(n.get("url_path"))
             recursive = n.get("recursive", True)
             var = self._templar.template(n.get("meta_var"))
-            nested_mapping = n.get("mapping", task_vars.get(var, dict()).get("mapping"))
-            next_nested = n.get("nested", task_vars.get(var, dict()).get("nested", list())) if recursive else list()
+            nested_mapping = n.get(
+                "mapping", task_vars.get(var, dict()).get("mapping"))
+            next_nested = n.get("nested", task_vars.get(var, dict()).get(
+                "nested", list())) if recursive else list()
 
             result["failed"] = True
             if not url_path:
@@ -151,7 +157,8 @@ class ActionModule(ActionBase):
                 result["traceback"] = format_exc()
                 return result
 
-            result = self.resolve(u, replace, nested_mapping, next_nested, task_vars, result)
+            result = self.resolve(u, replace, nested_mapping,
+                                  next_nested, task_vars, result)
             if result.get("failed"):
                 return result
 
@@ -173,7 +180,8 @@ class ActionModule(ActionBase):
 
             ansible_facts[k] = value
 
-        result["ansible_facts"] = result.get("ansible_facts", {self.ALREADY_RESOLVED_MARKER: True})
+        result["ansible_facts"] = result.get(
+            "ansible_facts", {self.ALREADY_RESOLVED_MARKER: True})
         result["ansible_facts"].update(ansible_facts)
         return result
 

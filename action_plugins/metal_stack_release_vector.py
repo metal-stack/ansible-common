@@ -16,7 +16,8 @@ from dataclasses import dataclass
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
+
 from ansible.playbook.role import Role
 from ansible.playbook.role.include import RoleInclude
 from ansible import constants as C
@@ -473,13 +474,13 @@ class OciLoader():
 
         try:
             bin_path = process.get_bin_path(
-                "cosign", required=True, opt_dirs=None)
+                "cosign", opt_dirs=None)
         except ValueError as e:
             raise FileNotFoundError("cosign needs to be installed: %s" %
                                     to_native(e.message)) from e
 
         env = os.environ.copy()
-        
+
         args = [bin_path, "verify"]
 
         if self._registry_credentials.get(self._registry, None):

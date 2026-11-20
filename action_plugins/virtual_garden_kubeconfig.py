@@ -6,7 +6,7 @@ import base64
 from datetime import datetime, timedelta, timezone
 
 from ansible.plugins.action import ActionBase
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.six import PY3
 
 from kubernetes import client, config, dynamic

@@ -6,6 +6,11 @@ import base64
 from datetime import datetime, timedelta, timezone
 
 from ansible.plugins.action import ActionBase
+try:
+    # ansible-core >= 2.21
+    from ansible.plugins.action import VariableLayer
+except ImportError:
+    VariableLayer = None
 from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.six import PY3
 
@@ -51,10 +56,10 @@ class ActionModule(ActionBase):
         refresh_minutes = module_args.get('refresh_minutes', 30)
 
         # check token if already created and not expiring
-        already_present = task_vars.get("ansible_facts", {}).get(
-            'virtual_garden_kubeconfig', None)
-        expires_at = task_vars.get("ansible_facts", {}).get(
-            'virtual_garden_kubeconfig_expires_at', None)
+        already_present = task_vars.get('virtual_garden_kubeconfig') or task_vars.get(
+            "ansible_facts", {}).get('virtual_garden_kubeconfig', None)
+        expires_at = task_vars.get('virtual_garden_kubeconfig_expires_at') or task_vars.get(
+            "ansible_facts", {}).get('virtual_garden_kubeconfig_expires_at', None)
 
         if already_present and expires_at:
             expires_in = datetime.fromtimestamp(
@@ -164,7 +169,7 @@ class ActionModule(ActionBase):
         if expires_at:
             result['virtual_garden_kubeconfig_expires_at'] = expires_at
 
-        return dict(ansible_facts=dict(result))
+        return self._register_vars(dict(), dict(result))
 
     @staticmethod
     def _get_latest_secret(secrets):
@@ -174,3 +179,18 @@ class ActionModule(ActionBase):
             if latest is None or int(secret.metadata.labels.get('issued-at-time')) < issued_time:
                 latest = secret
         return latest
+
+    def _register_vars(self, result, variables):
+        """
+        Registers the given variables as plain host variables (like set_fact does).
+
+        Returning them only through ansible_facts makes ansible-core inject them as
+        top-level facts, which is deprecated (INJECT_FACTS_AS_VARS) and will be removed.
+        """
+        if VariableLayer is not None:
+            # disable legacy behavior of registering 'ansible_facts' from result dict
+            self.register_host_variables({}, VariableLayer.CACHEABLE_FACT)
+            self.register_host_variables(variables, VariableLayer.EPHEMERAL_FACT)
+        # still contained in the result for older ansible versions and for output
+        result["ansible_facts"] = variables
+        return result

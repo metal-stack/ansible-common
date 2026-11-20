@@ -10,6 +10,11 @@ from yaml import safe_load
 
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase
+try:
+    # ansible-core >= 2.21
+    from ansible.plugins.action import VariableLayer
+except ImportError:
+    VariableLayer = None
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.module_utils.common.text.converters import to_native
 
@@ -58,8 +63,7 @@ class ActionModule(ActionBase):
         if smart and os.path.isfile(release_vector_cache_file_path):
             result["changed"] = False
             with open(release_vector_cache_file_path, 'r') as vector:
-                result["ansible_facts"] = json.load(vector)
-            return result
+                return self._register_vars(result, json.load(vector))
 
         if not files:
             result["skipped"] = True
@@ -74,7 +78,9 @@ class ActionModule(ActionBase):
         if result.get("failed"):
             return result
 
-        if smart and task_vars.get("ansible_facts", {}).get(self.ALREADY_RESOLVED_MARKER, False):
+        already_resolved = task_vars.get(self.ALREADY_RESOLVED_MARKER) or task_vars.get(
+            "ansible_facts", {}).get(self.ALREADY_RESOLVED_MARKER, False)
+        if smart and already_resolved:
             result["skipped"] = True
             return self._ensure_invocation(result)
 
@@ -95,6 +101,7 @@ class ActionModule(ActionBase):
             if result.get("failed"):
                 return result
 
+        self._register_vars(result, result.get("ansible_facts", {}))
         return self._ensure_invocation(result)
 
     def resolve(self, url, replace, mapping, nested, task_vars, result):
@@ -205,3 +212,18 @@ class ActionModule(ActionBase):
         for k, v in data.items():
             if isinstance(v, dict):
                 ActionModule.replace_key_value(v, key, old, new)
+
+    def _register_vars(self, result, variables):
+        """
+        Registers the given variables as plain host variables (like set_fact does).
+
+        Returning them only through ansible_facts makes ansible-core inject them as
+        top-level facts, which is deprecated (INJECT_FACTS_AS_VARS) and will be removed.
+        """
+        if VariableLayer is not None:
+            # disable legacy behavior of registering 'ansible_facts' from result dict
+            self.register_host_variables({}, VariableLayer.CACHEABLE_FACT)
+            self.register_host_variables(variables, VariableLayer.EPHEMERAL_FACT)
+        # still contained in the result for older ansible versions and for output
+        result["ansible_facts"] = variables
+        return result

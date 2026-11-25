@@ -21,6 +21,9 @@ short_description: Finds out facts about metal-stack switches.
 version_added: "2.9"
 description:
     - Can be used just as gather_facts.
+    - The results are registered as plain host variables by the accompanying action plugin
+      (metal_stack_switch_os_name, metal_stack_switch_os_is_sonic, metal_stack_switch_os_is_cumulus),
+      so they can be accessed directly without going through ansible_facts.
 author:
     - metal-stack
 '''

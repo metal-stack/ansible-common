@@ -15,8 +15,14 @@ from dataclasses import dataclass
 
 from ansible.module_utils.urls import open_url
 from ansible.plugins.action import ActionBase
+try:
+    # ansible-core >= 2.21
+    from ansible.plugins.action import VariableLayer
+except ImportError:
+    VariableLayer = None
 from ansible.errors import AnsibleError
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
+
 from ansible.playbook.role import Role
 from ansible.playbook.role.include import RoleInclude
 from ansible import constants as C
@@ -70,7 +76,7 @@ class ActionModule(ActionBase):
         if task_args.get('cache') and os.path.isfile(self._cache_file_path()):
             result["changed"] = False
             with open(self._cache_file_path(), 'r') as vector:
-                result["ansible_facts"] = json.load(vector)
+                self._register_vars(result, json.load(vector))
             display.vvv("- Returning cache from %s" % self._cache_file_path)
             return result
 
@@ -100,7 +106,7 @@ class ActionModule(ActionBase):
 
                 ansible_facts[k] = v
 
-        result["ansible_facts"] = ansible_facts
+        self._register_vars(result, ansible_facts)
 
         if task_args.get('cache'):
             with open(self._cache_file_path(), 'w') as vector:
@@ -165,6 +171,21 @@ class ActionModule(ActionBase):
     @staticmethod
     def _cache_file_path():
         return os.path.join(tempfile.gettempdir(), ActionModule.CACHE_FILE)
+
+    def _register_vars(self, result, variables):
+        """
+        Registers the given variables as plain host variables (like set_fact does).
+
+        Returning them only through ansible_facts makes ansible-core inject them as
+        top-level facts, which is deprecated (INJECT_FACTS_AS_VARS) and will be removed.
+        """
+        if VariableLayer is not None:
+            # disable legacy behavior of registering 'ansible_facts' from result dict
+            self.register_host_variables({}, VariableLayer.CACHEABLE_FACT)
+            self.register_host_variables(variables, VariableLayer.EPHEMERAL_FACT)
+        # still contained in the result for older ansible versions and for output
+        result["ansible_facts"] = variables
+        return result
 
 
 class RemoteResolver():
@@ -473,13 +494,13 @@ class OciLoader():
 
         try:
             bin_path = process.get_bin_path(
-                "cosign", required=True, opt_dirs=None)
+                "cosign", opt_dirs=None)
         except ValueError as e:
             raise FileNotFoundError("cosign needs to be installed: %s" %
                                     to_native(e.message)) from e
 
         env = os.environ.copy()
-        
+
         args = [bin_path, "verify"]
 
         if self._registry_credentials.get(self._registry, None):

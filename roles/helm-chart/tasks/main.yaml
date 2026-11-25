@@ -10,13 +10,18 @@
     dest: "{{ helm_chart_remote_temp }}"
     use_ssh_args: yes
     delete: yes
-  when: helm_chart_custom_folder is defined and helm_chart_custom_folder
+  when:
+    - helm_chart_custom_folder is defined
+    - helm_chart_custom_folder is not none
+    - helm_chart_custom_folder | length > 0
 
 - name: Template helm value file
   template:
     src: "{{ helm_value_file_template }}"
     dest: "{{ helm_chart_remote_temp + '/' + helm_value_file_template | basename }}"
-  when: helm_value_file_template is defined and helm_value_file_template
+  when:
+    - helm_value_file_template is defined
+    - helm_value_file_template | length > 0
 
 - name: Calculate hash of configuration
   set_fact:

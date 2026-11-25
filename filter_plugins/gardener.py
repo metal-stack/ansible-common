@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import base64
+import inspect
 import yaml
 import json
 
@@ -27,15 +28,49 @@ def shoot_admin_kubeconfig(kubeconfig, project_namespace, shoot_name, expiry_sec
         }
     }
 
-    response = api.call_api(resource_path=f'/apis/core.gardener.cloud/v1beta1/namespaces/{project_namespace}/shoots/{shoot_name}/adminkubeconfig',
-                            method='POST',
-                            body=kubeconfig_request,
-                            auth_settings=['BearerToken'],
-                            _preload_content=False,
-                            _return_http_data_only=True,
+    resource_path = f'/apis/core.gardener.cloud/v1beta1/namespaces/{project_namespace}/shoots/{shoot_name}/adminkubeconfig'
+    response = _post(api, resource_path, kubeconfig_request)
+
+    return base64.b64decode(json.loads(response)["status"]["kubeconfig"]).decode('utf-8')
+
+
+def _post(api, resource_path, body):
+    """POST a JSON document to a raw API resource path and return the response body.
+
+    The kubernetes python client changed its low-level ApiClient interface with
+    version 37.0.0 (OpenAPI Generator v7): call_api() now expects (method, url)
+    and the request needs to be prepared with param_serialize(), which also
+    applies the configured authentication. Support both interfaces to stay
+    compatible with old and new kubernetes python clients.
+    """
+    if 'resource_path' in inspect.signature(api.call_api).parameters:
+        response = api.call_api(resource_path=resource_path,
+                                method='POST',
+                                body=body,
+                                auth_settings=['BearerToken'],
+                                _preload_content=False,
+                                _return_http_data_only=True,
+                                )
+        return response.data
+
+    method, url, header_params, body, post_params = api.param_serialize(
+        method='POST',
+        resource_path=resource_path,
+        header_params={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        },
+        body=body,
+        auth_settings=['BearerToken'],
+        collection_formats={},
+    )
+    response = api.call_api(method, url,
+                            header_params=header_params,
+                            body=body,
+                            post_params=post_params,
                             )
 
-    return base64.b64decode(json.loads(response.data)["status"]["kubeconfig"]).decode('utf-8')
+    return response.read()
 
 
 def machine_images_for_cloud_profile(image_list, cris=None, compatibilities=None):

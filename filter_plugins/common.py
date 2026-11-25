@@ -8,8 +8,7 @@ import ipaddress
 
 from ansible.errors import AnsibleFilterError
 from ansible.module_utils.common.process import get_bin_path
-from ansible.module_utils._text import to_text
-from ansible.module_utils.six import next
+from ansible.module_utils.common.text.converters import to_text
 
 try:
     HAS_HUMANFRIENDLY = True
